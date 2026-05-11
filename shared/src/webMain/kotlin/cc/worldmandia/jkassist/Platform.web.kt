@@ -1,7 +1,7 @@
 package cc.worldmandia.jkassist
 
-class WasmPlatform : Platform {
+class WebPlatform : Platform {
     override val name: String = "Web with Kotlin/Wasm"
 }
 
-actual fun getPlatform(): Platform = WasmPlatform()
+actual fun getPlatform(): Platform = WebPlatform()

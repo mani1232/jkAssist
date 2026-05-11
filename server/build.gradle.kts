@@ -1,3 +1,6 @@
+import io.ktor.plugin.features.DockerPortMapping
+import io.ktor.plugin.features.DockerPortMappingProtocol
+
 plugins {
     alias(libs.plugins.kotlinJvm)
     alias(libs.plugins.ktor)
@@ -20,4 +23,21 @@ dependencies {
     implementation(libs.ktor.serverNetty)
     testImplementation(libs.ktor.serverTestHost)
     testImplementation(libs.kotlin.testJunit)
+}
+
+ktor {
+    docker {
+        val registryUrl = "ghcr.io/mani1232/jkAssist/server".lowercase()
+
+        localImageName.set(registryUrl)
+        imageTag.set(project.version.toString())
+
+        jreVersion.set(JavaVersion.VERSION_26)
+
+        portMappings.set(listOf(
+            DockerPortMapping(
+                8080, 8080, DockerPortMappingProtocol.TCP
+            )
+        ))
+    }
 }
