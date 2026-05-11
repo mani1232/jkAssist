@@ -1,3 +1,4 @@
+import io.ktor.plugin.features.DockerImageRegistry
 import io.ktor.plugin.features.DockerPortMapping
 import io.ktor.plugin.features.DockerPortMappingProtocol
 
@@ -39,5 +40,21 @@ ktor {
                 8080, 8080, DockerPortMappingProtocol.TCP
             )
         ))
+
+        externalRegistry.set(
+            DockerImageRegistry.externalRegistry(
+            username = providers.environmentVariable("GITHUB_USERNAME"),
+            password = providers.environmentVariable("GITHUB_PASSWORD"),
+            project = provider { "jkAssist-server" },
+            hostname = provider { "ghcr.io" },
+            namespace = provider { "mani1232" }
+        ))
+
+        jib {
+            container {
+                workingDirectory = "/home/container"
+                jvmFlags = listOf()
+            }
+        }
     }
 }

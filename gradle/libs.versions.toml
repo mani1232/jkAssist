@@ -87,8 +87,12 @@ kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref =
 
 [bundles]
 compose-core = [
-    "compose-runtime", "compose-ui", "compose-foundation", "compose-animation", "compose-components-resources"
+    "compose-runtime", "compose-runtime-saveable", "compose-ui", "compose-foundation", "compose-animation", "compose-components-resources"
 ]
-compose-material3-adaptive = [
-    "compose-adaptive-core", "compose-adaptive-layout", "compose-adaptive-navigation3", "compose-material3-navigation-suite"
+compose-adaptive = [
+    "compose-material3", "compose-adaptive-core", "compose-adaptive-layout", "compose-adaptive-navigation", "compose-adaptive-navigation3", "compose-material3-navigation-suite"
+]
+
+compose-architecture = [
+    "androidx-lifecycle-runtime-compose", "androidx-lifecycle-viewmodel-compose", "androidx-savedstate", "androidx-navigation3-ui", "androidx-navigationevent-compose", "androidx-window-core"
 ]

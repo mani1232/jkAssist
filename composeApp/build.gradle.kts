@@ -17,7 +17,8 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.bundles.compose.core)
-            implementation(libs.bundles.compose.material3.adaptive)
+            implementation(libs.bundles.compose.adaptive)
+            implementation(libs.bundles.compose.architecture)
             implementation(projects.shared)
         }
         commonTest.dependencies {
