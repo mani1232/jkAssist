@@ -5,6 +5,8 @@ import io.ktor.plugin.features.DockerPortMappingProtocol
 plugins {
     alias(libs.plugins.kotlinJvm)
     alias(libs.plugins.ktor)
+    //alias(libs.plugins.koin.compiler)
+    alias(libs.plugins.kotlinSerialization)
     application
 }
 
@@ -20,9 +22,27 @@ application {
 dependencies {
     implementation(projects.shared)
     implementation(libs.logback)
-    implementation(libs.ktor.serverCore)
-    implementation(libs.ktor.serverNetty)
-    testImplementation(libs.ktor.serverTestHost)
+
+    //implementation(libs.koin.core)
+    //implementation(libs.koin.ktor)
+    //implementation(libs.koin.ktor.logger)
+
+    implementation(libs.kotlin.koog)
+    implementation(libs.kotlin.koog.memory)
+    implementation(libs.kotlin.koog.ktor)
+    implementation(libs.kotlin.koog.ext)
+    implementation(libs.kotlin.koog.tools)
+
+    implementation(ktorLibs.server.core)
+    implementation(ktorLibs.server.websockets)
+    implementation(ktorLibs.server.cio)
+    implementation(ktorLibs.server.auth)
+    implementation(ktorLibs.server.auth.apiKey)
+    implementation(ktorLibs.server.auth.jwt)
+    implementation(ktorLibs.server.di)
+    implementation(ktorLibs.serialization)
+    implementation(ktorLibs.serialization.kotlinx.json)
+
     testImplementation(libs.kotlin.testJunit)
 }
 
