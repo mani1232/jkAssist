@@ -45,7 +45,7 @@ ktor {
             DockerImageRegistry.externalRegistry(
             username = providers.environmentVariable("GITHUB_USERNAME"),
             password = providers.environmentVariable("GITHUB_PASSWORD"),
-            project = provider { "jkAssist-server" },
+            project = provider { "jkAssist/server" },
             hostname = provider { "ghcr.io" },
             namespace = provider { "mani1232" }
         ))
