@@ -2,7 +2,7 @@ name: Build and Deploy KMP Web App
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
 
 permissions:
   contents: read
