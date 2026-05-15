@@ -54,7 +54,7 @@ class ChatNetworkClient(
     ) {
         val sessionId = sessionStorage.getSessionId()
         val wsPath = buildString {
-            append("/chat?userId=$USER_TOKEN")
+            append("/ws/chat?userId=$USER_TOKEN")
             if (sessionId != null) append("&sessionId=$sessionId")
         }
 
