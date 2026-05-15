@@ -53,9 +53,9 @@ fun Routing.chatRoutes() {
 
         logger.info("🟢 Чат подключен: userId=$userId, session=$sessionUuid")
         val session = agent.createSession(sessionUuid)
+        session.run("[СИСТЕМНОЕ СООБЩЕНИЕ] Установлено соединение. ID текущего собеседника: $userId. Сохрани этот ID в контексте и ВСЕГДА используй его как аргумент `userId` для вызова инструментов. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО просить пользователя назвать свой ID.")
 
         if (call.request.queryParameters["sessionId"] == null) {
-            session.run("[СИСТЕМНОЕ СООБЩЕНИЕ] Установлено соединение. ID текущего собеседника: $userId. Сохрани этот ID в контексте и ВСЕГДА используй его как аргумент `userId` для вызова инструментов. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО просить пользователя назвать свой ID.")
             sendEvent(WsEvent.SessionCreated(sessionUuid))
         }
 
