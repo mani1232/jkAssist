@@ -47,7 +47,10 @@ fun ChatScreen(
 ) {
     val listState = rememberLazyListState()
     val sortedMessages = remember(state.messages) {
-        state.messages.values.sortedBy { it.timestampMs }.toList()
+        state.messages.values.sortedWith(
+            compareBy<WsEvent.Message> { it.timestampMs }
+                .thenBy { it.id }
+        ).toList()
     }
 
     LaunchedEffect(state.isHistoryLoaded, sortedMessages.isEmpty()) {
