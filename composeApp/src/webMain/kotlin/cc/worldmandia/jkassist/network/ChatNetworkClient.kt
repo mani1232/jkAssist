@@ -62,7 +62,11 @@ class ChatNetworkClient(
             method = HttpMethod.Get,
             host = API_HOST,
             port = API_PORT,
-            path = wsPath
+            path = wsPath,
+            request = {
+                url.protocol = URLProtocol.WSS
+                url.port = API_PORT
+            }
         ) {
             webSocketSession = this
             onConnected()
