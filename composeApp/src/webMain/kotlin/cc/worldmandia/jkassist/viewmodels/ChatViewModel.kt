@@ -127,21 +127,6 @@ class ChatViewModel(
         val currentState = _state.value
         if (text.isBlank() || !currentState.isConnected) return
 
-        val timestamp = Clock.System.now()
-        val userMsg = WsEvent.Message(
-            id = "u-${timestamp.toEpochMilliseconds()}",
-            role = Role.USER,
-            text = text,
-            timestampMs = timestamp
-        )
-
-        _state.update {
-            it.copy(
-                messages = it.messages + (userMsg.id to userMsg),
-                isShowingWelcome = false
-            )
-        }
-
         scope.launch {
             try {
                 networkClient.sendMessage(text)

@@ -77,6 +77,7 @@ fun Routing.chatRoutes() {
                     timestampMs = Clock.System.now()
                 )
                 ChatStateManager.saveUiMessage(sessionUuid, userMsg)
+                sendEvent(userMsg)
 
                 if (ChatStateManager.isWaitingForOperator(sessionUuid)) {
                     handleOperatorSimulation(userText)
