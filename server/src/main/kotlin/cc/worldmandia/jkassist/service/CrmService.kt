@@ -1,5 +1,6 @@
 package cc.worldmandia.jkassist.service
 
+import cc.worldmandia.jkassist.MockDatabase
 import cc.worldmandia.jkassist.TicketCategory
 import cc.worldmandia.jkassist.UserTicket
 import kotlinx.coroutines.Dispatchers
@@ -23,6 +24,7 @@ class CrmServiceImpl : CrmService {
     override suspend fun registerEmergency(
         category: TicketCategory, apartment: String, description: String, urgent: Boolean, userId: String
     ): UserTicket = withContext(Dispatchers.IO) {
+
         UserTicket(
             id = "REQ-${(1000..9999).random()}",
             userId = userId,
@@ -31,6 +33,7 @@ class CrmServiceImpl : CrmService {
             status = "Ожидание",
             date = Clock.System.now()
         ).also {
+            MockDatabase.tickets.add(it)
             logger.info("🎟️ Заявка создана: $it | Категория: $category | Квартира: $apartment | Срочно: $urgent")
         }
     }
