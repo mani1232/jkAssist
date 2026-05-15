@@ -22,8 +22,8 @@ class ChatNetworkClient(
     val sessionStorage: SessionStorage
 ) {
     companion object {
-        private const val API_HOST = "play.worldmandia.cc"
-        private const val API_PORT = 8800
+        private const val API_HOST = "hack.worldmandia.cc"
+        private const val API_PORT = 443
         private const val API_URL = "https://$API_HOST:$API_PORT"
 
         private const val USER_TOKEN = "user_123"
