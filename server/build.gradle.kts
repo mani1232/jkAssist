@@ -27,10 +27,14 @@ dependencies {
     //implementation(libs.koin.ktor)
     //implementation(libs.koin.ktor.logger)
 
+    implementation(libs.kotlin.io)
+    implementation(libs.kotlin.datetime)
+
     implementation(libs.kotlin.koog)
     implementation(libs.kotlin.koog.memory)
     implementation(libs.kotlin.koog.ktor)
     implementation(libs.kotlin.koog.ext)
+    implementation(libs.kotlin.koog.longterm)
     implementation(libs.kotlin.koog.tools)
 
     implementation(ktorLibs.server.core)
@@ -38,6 +42,8 @@ dependencies {
     implementation(ktorLibs.server.cio)
     implementation(ktorLibs.server.auth)
     implementation(ktorLibs.server.auth.apiKey)
+    implementation(ktorLibs.server.cors)
+    implementation(ktorLibs.server.contentNegotiation)
     implementation(ktorLibs.server.auth.jwt)
     implementation(ktorLibs.server.di)
     implementation(ktorLibs.serialization)

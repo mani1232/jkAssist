@@ -3,6 +3,7 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
     repositories {
+        maven("https://redirector.kotlinlang.org/maven/compose-dev")
         google {
             mavenContent {
                 includeGroupAndSubgroups("androidx")
@@ -22,6 +23,7 @@ dependencyResolutionManagement {
         }
     }
     repositories {
+        maven("https://redirector.kotlinlang.org/maven/compose-dev")
         google {
             mavenContent {
                 includeGroupAndSubgroups("androidx")

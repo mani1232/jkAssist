@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.composePwa)
     //alias(libs.plugins.koin.compiler)
     //alias(libs.plugins.compose.hot.reload)
 }
@@ -34,6 +35,7 @@ kotlin {
             implementation(ktorLibs.client.websockets)
             implementation(ktorLibs.client.auth)
             implementation(ktorLibs.client.serialization)
+            implementation(ktorLibs.client.contentNegotiation)
             implementation(ktorLibs.serialization.kotlinx.json)
             implementation(ktorLibs.client.json)
 

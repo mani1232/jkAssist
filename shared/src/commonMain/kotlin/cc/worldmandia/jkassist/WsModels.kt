@@ -1,14 +1,14 @@
 package cc.worldmandia.jkassist
 
-import kotlin.jvm.JvmInline
-import kotlin.time.Instant
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 @Serializable
-@JvmInline
-value class TicketId(val value: String)
-
 enum class Role { USER, BOT, SYSTEM }
+
+@Serializable
+enum class TicketCategory { PLUMBING, ELECTRICAL, GAS, CARPENTRY, CLEANING, OTHER }
 
 @Serializable
 sealed interface WsEvent {
@@ -17,10 +17,16 @@ sealed interface WsEvent {
         val id: String,
         val role: Role,
         val text: String,
-        val timestamp: Instant
+        val timestampMs: Instant
     ) : WsEvent
 
     @Serializable data object TypingStarted : WsEvent
     @Serializable data object TypingStopped : WsEvent
     @Serializable data class Error(val message: String) : WsEvent
+
+    @Serializable data object TransferToSupport : WsEvent
+
+    @Serializable
+    @SerialName("session_created")
+    data class SessionCreated(val sessionId: String) : WsEvent
 }
