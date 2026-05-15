@@ -52,8 +52,12 @@ fun ChatScreen(
     }
 
     LaunchedEffect(state.isHistoryLoaded, messageList.isEmpty()) {
-        if (state.isHistoryLoaded && messageList.isEmpty()) {
-            onToggleWelcome(true)
+        if (state.isHistoryLoaded) {
+            if (messageList.isEmpty()) {
+                onToggleWelcome(true)
+            } else {
+                onToggleWelcome(false)
+            }
         }
     }
 
@@ -116,7 +120,8 @@ fun ChatScreen(
                 isConnected = state.isConnected,
                 isHistoryLoaded = state.isHistoryLoaded,
                 isTyping = state.isTyping,
-                onSendMessage = onSendMessage
+                onSendMessage = onSendMessage,
+                onToggleWelcome
             )
         }
     }
@@ -303,7 +308,8 @@ fun ChatInputBar(
     isConnected: Boolean,
     isHistoryLoaded: Boolean,
     isTyping: Boolean,
-    onSendMessage: (String) -> Unit
+    onSendMessage: (String) -> Unit,
+    onToggleWelcome: (Boolean) -> Unit
 ) {
     var inputText by remember { mutableStateOf("") }
     var showDevAlert by remember { mutableStateOf(false) }
@@ -376,6 +382,7 @@ fun ChatInputBar(
                 if (hasText) {
                     FilledIconButton(
                         onClick = {
+                            onToggleWelcome(false)
                             onSendMessage(inputText)
                             inputText = ""
                         },
