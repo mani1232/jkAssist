@@ -64,7 +64,12 @@ class ChatViewModel(
                         )
                     }
                 } finally {
-                    _state.update { it.copy(isConnected = false) }
+                    _state.update {
+                        it.copy(
+                            isConnected = false,
+                            isTyping = false
+                        )
+                    }
                     delay(3000.milliseconds)
                 }
             }

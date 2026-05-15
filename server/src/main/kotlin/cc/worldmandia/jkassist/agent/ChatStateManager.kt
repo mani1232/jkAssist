@@ -8,8 +8,15 @@ import ai.koog.prompt.message.ResponseMetaInfo
 import cc.worldmandia.jkassist.Role
 import cc.worldmandia.jkassist.WsEvent
 import cc.worldmandia.jkassist.jsonFormat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.io.path.Path
 import kotlin.time.Instant
 
@@ -20,7 +27,19 @@ object ChatStateManager {
     private val waitingChats = mutableMapOf<String, Instant>()
 
     private val uiHistoryFile = File("ui_history.json")
-    private val uiHistory = mutableMapOf<String, MutableList<WsEvent.Message>>()
+    private val uiHistory = ConcurrentHashMap<String, MutableList<WsEvent.Message>>()
+    private val fileMutex = Mutex()
+
+    fun saveUiMessage(sessionId: String, message: WsEvent.Message) {
+        val history = uiHistory.computeIfAbsent(sessionId) { CopyOnWriteArrayList() }
+        history.add(message)
+
+        CoroutineScope(Dispatchers.IO).launch {
+            fileMutex.withLock {
+                uiHistoryFile.writeText(jsonFormat.encodeToString(uiHistory.toMutableMap()))
+            }
+        }
+    }
 
     init {
         if (uiHistoryFile.exists()) {
@@ -80,15 +99,9 @@ object ChatStateManager {
         return uiHistory[sessionId] ?: emptyList()
     }
 
-    fun saveUiMessage(sessionId: String, message: WsEvent.Message) {
-        val history = uiHistory.getOrPut(sessionId) { mutableListOf() }
-        history.add(message)
-        saveToFile()
-    }
-
     private fun saveToFile() {
         try {
-            uiHistoryFile.writeText(jsonFormat.encodeToString(uiHistory))
+            uiHistoryFile.writeText(jsonFormat.encodeToString(uiHistory.toMutableMap()))
         } catch (e: Exception) {
             println("Ошибка сохранения истории в файл: ${e.message}")
         }
