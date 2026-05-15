@@ -61,12 +61,6 @@ ktor {
 
         jreVersion.set(JavaVersion.VERSION_26)
 
-        portMappings.set(listOf(
-            DockerPortMapping(
-                8080, 8080, DockerPortMappingProtocol.TCP
-            )
-        ))
-
         externalRegistry.set(
             DockerImageRegistry.externalRegistry(
             username = providers.environmentVariable("GITHUB_USERNAME"),

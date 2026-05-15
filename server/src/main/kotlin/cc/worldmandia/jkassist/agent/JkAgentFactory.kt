@@ -30,7 +30,10 @@ object JkAgentFactory {
 
     fun create(crmService: CrmService, infoService: InfoService): AIAgent<String, String> {
         val model = GoogleModels.Gemini2_5Flash
-        val apiKey = System.getenv("GEMINI_API_KEY") ?: error("GEMINI_API_KEY не установлен")
+        val apiKey = System.getenv("GEMINI_API_KEY") ?: run {
+            println("ERROR: missing GEMINI_API_KEY, write it:")
+            readln()
+        }
         val executor = simpleGoogleAIExecutor(apiKey)
 
         val toolRegistry = ToolRegistry {
