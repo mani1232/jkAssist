@@ -46,6 +46,7 @@ dependencies {
     implementation(ktorLibs.server.contentNegotiation)
     implementation(ktorLibs.server.auth.jwt)
     implementation(ktorLibs.server.di)
+    implementation(ktorLibs.server.forwardedHeader)
     implementation(ktorLibs.serialization)
     implementation(ktorLibs.serialization.kotlinx.json)
 
