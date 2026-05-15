@@ -7,8 +7,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlin.time.Clock
-import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 data class ChatState(
     val isConnecting: Boolean = false,
@@ -70,7 +69,7 @@ class ChatViewModel(
                             isTyping = false
                         )
                     }
-                    delay(3000.milliseconds)
+                    delay(5.seconds)
                 }
             }
         }
@@ -86,7 +85,7 @@ class ChatViewModel(
                     isHistoryLoaded = true
                 )
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             _state.update { it.copy(isHistoryLoaded = true) }
         }
     }

@@ -15,7 +15,7 @@ compose-adaptive = "1.3.0-beta01+dev4149"
 androidx-lifecycle = "2.11.10-alpha01+dev4136"
 androidx-navigation = "2.10.0-alpha01+dev4149"
 androidx-navigation3 = "1.1.10-alpha01+dev4136"
-androidx-navigationevent = "1.1.0"
+androidx-navigationevent = "1.1.1+dev4150"
 androidx-savedstate = "1.4.0"
 androidx-window = "1.5.1"
 

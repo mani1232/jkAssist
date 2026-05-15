@@ -18,6 +18,12 @@ import io.ktor.websocket.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format
+import kotlinx.datetime.format.FormatStringsInDatetimeFormats
+import kotlinx.datetime.format.byUnicodePattern
+import kotlinx.datetime.toLocalDateTime
 import org.slf4j.LoggerFactory
 import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
@@ -25,7 +31,7 @@ import kotlin.uuid.Uuid
 
 private val logger = LoggerFactory.getLogger("ChatRoutes")
 
-@OptIn(ExperimentalUuidApi::class)
+@OptIn(ExperimentalUuidApi::class, FormatStringsInDatetimeFormats::class)
 fun Routing.chatRoutes() {
     val crmService = CrmServiceImpl()
     val infoService = InfoService()
@@ -53,11 +59,18 @@ fun Routing.chatRoutes() {
 
         logger.info("🟢 Чат подключен: userId=$userId, session=$sessionUuid")
         val session = agent.createSession(sessionUuid)
-        session.run("[СИСТЕМНОЕ СООБЩЕНИЕ] Установлено соединение. ID текущего собеседника: $userId. Сохрани этот ID в контексте и ВСЕГДА используй его как аргумент `userId` для вызова инструментов. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО просить пользователя назвать свой ID.")
+        session.run(
+            """
+            [СИСТЕМНОЕ СООБЩЕНИЕ] Установлено соединение. ID текущего собеседника: $userId. Сохрани этот ID в контексте и ВСЕГДА используй его как аргумент `userId` для вызова инструментов. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО просить пользователя назвать свой ID.
+            Используй эту дату что бы давать актуальную информацию, сегодня ${
+                Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).format(LocalDateTime.Format {
+                    byUnicodePattern("yyyy-MM-dd'T'HH:mm:ss[.SSS]")
+                })
+            }
+            """.trimIndent()
+        )
 
-        if (call.request.queryParameters["sessionId"] == null) {
-            sendEvent(WsEvent.SessionCreated(sessionUuid))
-        }
+        sendEvent(WsEvent.SessionCreated(sessionUuid))
 
         if (ChatStateManager.isWaitingForOperator(sessionUuid)) {
             sendEvent(WsEvent.TransferToSupport)

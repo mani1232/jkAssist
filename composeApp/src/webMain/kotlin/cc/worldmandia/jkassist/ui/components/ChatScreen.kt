@@ -283,7 +283,7 @@ fun MessageList(
                 exit = fadeOut() + slideOutVertically { it / 2 }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(12.dp).padding(start = 8.dp),
+                        modifier = Modifier.padding(start = 8.dp).size(12.dp),
                         strokeWidth = 2.dp
                     )
                     Text(
@@ -419,7 +419,7 @@ fun ChatBubble(msg: WsEvent.Message) {
         else -> "Диспетчер"
     }
 
-    val markdownState = rememberMarkdownState(msg.id, retainState = true) { msg.text }
+    val markdownState = rememberMarkdownState(msg.id, retainState = false) { msg.text }
 
     Column(
         modifier = Modifier.fillMaxWidth(), horizontalAlignment = when {
