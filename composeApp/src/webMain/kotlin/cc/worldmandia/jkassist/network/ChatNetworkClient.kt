@@ -54,11 +54,11 @@ class ChatNetworkClient(
     ) {
         val sessionId = sessionStorage.getSessionId()
         val wsPath = buildString {
-            append("/wss/chat?userId=$USER_TOKEN")
+            append("/chat?userId=$USER_TOKEN")
             if (sessionId != null) append("&sessionId=$sessionId")
         }
 
-        httpClient.webSocket(
+        httpClient.wss(
             method = HttpMethod.Get,
             host = API_HOST,
             port = API_PORT,
