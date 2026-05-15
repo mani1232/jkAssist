@@ -36,21 +36,13 @@ class ChatViewModel(
 
     fun connect() {
         connectionJob?.cancel()
-
         connectionJob = scope.launch {
             while (isActive) {
                 _state.update { it.copy(isConnecting = true, isConnected = false, error = null) }
-
                 try {
                     val sessionId = networkClient.sessionStorage.getSessionId()
                     if (sessionId != null) {
-                        val history = networkClient.getHistory(sessionId)
-                        _state.update {
-                            it.copy(
-                                messages = history.associateBy { msg -> msg.id },
-                                isHistoryLoaded = true
-                            )
-                        }
+                        loadHistory(sessionId)
                     } else {
                         _state.update { it.copy(isHistoryLoaded = true) }
                     }
@@ -61,16 +53,13 @@ class ChatViewModel(
                         },
                         onEvent = ::handleIncomingEvent
                     )
-
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Throwable) {
-                    println("Сетевая ошибка: ${e.message}")
                     networkClient.disconnect()
                     _state.update {
                         it.copy(
                             isConnecting = false,
-                            isHistoryLoaded = false,
                             error = "Нет подключения к серверу. Повторяем попытку..."
                         )
                     }
@@ -82,45 +71,41 @@ class ChatViewModel(
         }
     }
 
+    private suspend fun loadHistory(sessionId: String) {
+        try {
+            val history = networkClient.getHistory(sessionId)
+            _state.update { currentState ->
+                val mergedMessages = history.associateBy { it.id } + currentState.messages
+                currentState.copy(
+                    messages = mergedMessages,
+                    isHistoryLoaded = true
+                )
+            }
+        } catch (e: Exception) {
+            _state.update { it.copy(isHistoryLoaded = true) }
+        }
+    }
+
     private fun handleIncomingEvent(event: WsEvent) {
         when (event) {
             is WsEvent.Message -> {
                 _state.update { currentState ->
                     val isEndMessage = event.role == Role.SYSTEM && event.text.contains("Оператор завершил диалог")
-
                     currentState.copy(
                         messages = currentState.messages + (event.id to event),
                         isOperatorMode = !isEndMessage && currentState.isOperatorMode
                     )
                 }
             }
-
             is WsEvent.TypingStarted -> _state.update { it.copy(isTyping = true) }
             is WsEvent.TypingStopped -> _state.update { it.copy(isTyping = false) }
             is WsEvent.Error -> _state.update { it.copy(error = event.message) }
             is WsEvent.TransferToSupport -> _state.update { it.copy(isOperatorMode = true) }
             is WsEvent.SessionCreated -> {
-                scope.launch {
-                    try {
-                        val history = networkClient.getHistory(event.sessionId)
-                        _state.update {
-                            it.copy(
-                                messages = history.associateBy { msg -> msg.id },
-                                isHistoryLoaded = true
-                            )
-                        }
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (_: Throwable) {
-                        _state.update { it.copy(isHistoryLoaded = true, error = "Не удалось загрузить новую историю") }
-                    }
-                }
+                _state.update { it.copy(messages = emptyMap()) }
+                scope.launch { loadHistory(event.sessionId) }
             }
         }
-    }
-
-    fun setShowWelcome(show: Boolean) {
-        _state.update { it.copy(isShowingWelcome = show) }
     }
 
     fun sendMessage(text: String) {
@@ -131,8 +116,12 @@ class ChatViewModel(
             try {
                 networkClient.sendMessage(text)
             } catch (_: Exception) {
-                _state.update { it.copy(error = "Ошибка отправки сообщения: нет сети") }
+                _state.update { it.copy(error = "Ошибка отправки: проверьте соединение") }
             }
         }
+    }
+
+    fun setShowWelcome(show: Boolean) {
+        _state.update { it.copy(isShowingWelcome = show) }
     }
 }

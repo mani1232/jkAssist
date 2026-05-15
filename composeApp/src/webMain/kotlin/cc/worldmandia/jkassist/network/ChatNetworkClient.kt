@@ -11,6 +11,7 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.websocket.*
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
@@ -96,6 +97,7 @@ class ChatNetworkClient(
     }
 
     fun disconnect() {
+        webSocketSession?.cancel()
         webSocketSession = null
     }
 }

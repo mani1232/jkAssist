@@ -46,29 +46,28 @@ fun ChatScreen(
     onToggleWelcome: (Boolean) -> Unit
 ) {
     val listState = rememberLazyListState()
-    val sortedMessages = remember(state.messages) {
-        state.messages.values.sortedWith(
-            compareBy<WsEvent.Message> { it.timestampMs }
-                .thenBy { it.id }
-        ).toList()
+
+    val messageList = remember(state.messages) {
+        state.messages.values.toList()
     }
 
-    LaunchedEffect(state.isHistoryLoaded, sortedMessages.isEmpty()) {
-        if (state.isHistoryLoaded && sortedMessages.isEmpty()) {
+    LaunchedEffect(state.isHistoryLoaded, messageList.isEmpty()) {
+        if (state.isHistoryLoaded && messageList.isEmpty()) {
             onToggleWelcome(true)
         }
     }
 
-    LaunchedEffect(sortedMessages.size, state.isTyping) {
-        val totalItems = listState.layoutInfo.totalItemsCount
-        if (totalItems > 0) {
-            val isFromUser = sortedMessages.lastOrNull()?.role == Role.USER
-            val visibleItems = listState.layoutInfo.visibleItemsInfo
+    LaunchedEffect(messageList.size, state.isTyping) {
+        if (messageList.isNotEmpty()) {
+            val lastMsg = messageList.last()
+            val isFromUser = lastMsg.role == Role.USER
 
-            val isAtBottom = visibleItems.isEmpty() || (visibleItems.last().index >= totalItems - 2)
+            val visibleItems = listState.layoutInfo.visibleItemsInfo
+            val isAtBottom = visibleItems.isEmpty() ||
+                    (visibleItems.last().index >= listState.layoutInfo.totalItemsCount - 3)
 
             if (isFromUser || isAtBottom) {
-                listState.animateScrollToItem(totalItems)
+                listState.animateScrollToItem(listState.layoutInfo.totalItemsCount)
             }
         }
     }
@@ -104,7 +103,7 @@ fun ChatScreen(
                         })
                     } else {
                         MessageList(
-                            messages = sortedMessages,
+                            messages = messageList,
                             isTyping = state.isTyping,
                             isOperatorMode = state.isOperatorMode,
                             listState = listState
@@ -233,7 +232,6 @@ fun ChatTopBar(
                         )
                     }
                 }
-
                 !isConnected -> {
                     IconButton(onClick = onReconnect) {
                         Icon(
@@ -243,7 +241,6 @@ fun ChatTopBar(
                         )
                     }
                 }
-
                 isOperatorMode -> {
                     Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
                         Icon(imageVector = Icons.Outlined.Face, contentDescription = "Оператор")
