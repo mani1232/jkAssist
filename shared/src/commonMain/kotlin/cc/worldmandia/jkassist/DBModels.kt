@@ -15,7 +15,7 @@ data class User(
 
 @Serializable
 data class Apartment(
-    val number: Int, val countOfRoom: Int, val address: String, val balancePerApartment: Double = 0.0
+    val numberOfApartment: Int, val countOfRoom: Int, val address: String, val balancePerApartment: Double = 0.0
 )
 
 @Serializable
