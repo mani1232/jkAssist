@@ -1,5 +1,6 @@
 package cc.worldmandia.jkassist.service
 
+import cc.worldmandia.jkassist.Apartment
 import cc.worldmandia.jkassist.MockDatabase
 import cc.worldmandia.jkassist.TicketCategory
 import cc.worldmandia.jkassist.UserTicket
@@ -11,7 +12,7 @@ import kotlin.time.Clock
 interface CrmService {
     suspend fun registerEmergency(
         category: TicketCategory,
-        apartment: String,
+        apartment: Apartment,
         description: String,
         urgent: Boolean,
         userId: String
@@ -22,7 +23,7 @@ class CrmServiceImpl : CrmService {
     private val logger = LoggerFactory.getLogger(CrmServiceImpl::class.java)
 
     override suspend fun registerEmergency(
-        category: TicketCategory, apartment: String, description: String, urgent: Boolean, userId: String
+        category: TicketCategory, apartment: Apartment, description: String, urgent: Boolean, userId: String
     ): UserTicket = withContext(Dispatchers.IO) {
 
         UserTicket(

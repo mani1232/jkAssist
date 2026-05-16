@@ -4,6 +4,7 @@ import ai.koog.agents.core.tools.annotations.LLMDescription
 import ai.koog.agents.core.tools.annotations.Tool
 import ai.koog.agents.core.tools.reflect.ToolSet
 import cc.worldmandia.jkassist.TicketCategory
+import cc.worldmandia.jkassist.jsonFormat
 import cc.worldmandia.jkassist.service.CrmService
 import cc.worldmandia.jkassist.service.InfoService
 import kotlinx.datetime.LocalDateTime
@@ -67,25 +68,28 @@ class JkSupportTools(
         }
     }
 
-    @LLMDescription("Отримати інформацію про профіль користувача (баланс, номер квартири) за його ID.")
+    @LLMDescription("Отримати повну інформацію про профіль користувача за його ID.")
     @Tool
     fun getUserProfile(
         @LLMDescription("ЗАВЖДИ використовуй системний ID користувача, переданий тобі на початку діалогу.") userId: String
     ): String {
         val user = infoService.findUser(userId) ?: return "Користувача не знайдено."
-        return "Мешканець: ${user.surname} ${user.username}, кв. ${user.apartment}. Баланс: ${user.balance} грн."
+        return "Info мешканець: ${jsonFormat.encodeToString(user)}"
     }
 
     @LLMDescription("Створити нову заявку в CRM. Вимагає ID користувача.")
     @Tool
     suspend fun createTicket(
         @LLMDescription("ЗАВЖДИ використовуй системний ID користувача, переданий тобі на початку діалогу.") userId: String,
+        @LLMDescription("ApartmentNumber from can get from `getUserProfile`") apartmentNumber: Int,
         @LLMDescription("Категорія проблеми") category: TicketCategory,
         @LLMDescription("Детальний опис проблеми") description: String
     ): String {
         val user = infoService.findUser(userId) ?: return "Помилка: користувача не знайдено."
-        val ticket = crmService.registerEmergency(category, user.apartment, description, false, userId)
-        return "Заявка **${ticket.id}** успішно створена для квартири ${user.apartment}."
+        user.apartments.first { it.number == apartmentNumber }.let {
+            val ticket = crmService.registerEmergency(category, it, description, false, userId)
+            return "Заявка **${ticket.id}** успішно створена для квартири ${it}."
+        }
     }
 
     @LLMDescription("Перевести діалог на живого оператора підтримки.")
