@@ -400,7 +400,7 @@ fun ChatInputBar(
                 value = inputText,
                 onValueChange = { inputText = it },
                 modifier = Modifier.weight(1f).onKeyEvent { event ->
-                    if (event.nativeKeyEvent == Key.Enter && !event.isShiftPressed && event.type == KeyEventType.KeyUp) {
+                    if (event.key == Key.Enter && !event.isShiftPressed && event.type == KeyEventType.KeyUp) {
                         if (isSendEnabled) {
                             onToggleWelcome(false)
                             onSendMessage(inputText.trim())
