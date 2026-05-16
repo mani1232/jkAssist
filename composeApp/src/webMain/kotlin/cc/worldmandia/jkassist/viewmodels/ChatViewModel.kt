@@ -101,6 +101,7 @@ class ChatViewModel(
                     )
                 }
             }
+
             is WsEvent.TypingStarted -> _state.update { it.copy(isTyping = true) }
             is WsEvent.TypingStopped -> _state.update { it.copy(isTyping = false) }
             is WsEvent.Error -> _state.update { it.copy(error = event.message) }

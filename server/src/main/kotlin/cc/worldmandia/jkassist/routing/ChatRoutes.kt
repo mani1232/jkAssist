@@ -18,12 +18,6 @@ import io.ktor.websocket.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.launch
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.format
-import kotlinx.datetime.format.FormatStringsInDatetimeFormats
-import kotlinx.datetime.format.byUnicodePattern
-import kotlinx.datetime.toLocalDateTime
 import org.slf4j.LoggerFactory
 import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
@@ -67,7 +61,7 @@ fun Routing.chatRoutes() {
             """.trimIndent()
             )
         }
-        
+
         sendEvent(WsEvent.SessionCreated(sessionUuid))
 
         if (ChatStateManager.isWaitingForOperator(sessionUuid)) {

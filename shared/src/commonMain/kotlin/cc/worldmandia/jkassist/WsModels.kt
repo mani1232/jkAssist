@@ -20,11 +20,15 @@ sealed interface WsEvent {
         val timestampMs: Instant
     ) : WsEvent
 
-    @Serializable data object TypingStarted : WsEvent
-    @Serializable data object TypingStopped : WsEvent
-    @Serializable data class Error(val message: String) : WsEvent
+    @Serializable
+    data object TypingStarted : WsEvent
+    @Serializable
+    data object TypingStopped : WsEvent
+    @Serializable
+    data class Error(val message: String) : WsEvent
 
-    @Serializable data object TransferToSupport : WsEvent
+    @Serializable
+    data object TransferToSupport : WsEvent
 
     @Serializable
     @SerialName("session_created")

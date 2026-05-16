@@ -25,11 +25,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.isShiftPressed
-import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -267,6 +263,7 @@ fun ChatTopBar(
                         )
                     }
                 }
+
                 !isConnected -> {
                     IconButton(onClick = onReconnect) {
                         Icon(
@@ -276,6 +273,7 @@ fun ChatTopBar(
                         )
                     }
                 }
+
                 isOperatorMode -> {
                     Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
                         Icon(imageVector = Icons.Outlined.Face, contentDescription = "Оператор")
