@@ -52,26 +52,26 @@ object MockDatabase {
 
     val users = listOf(
         User(
-            "user_123", "Иван", "Иванов", listOf(
+            "user_123", "Mykyta", "Secret", listOf(
                 Apartment(
                     101, 3, "13 street", 250.0
                 ), Apartment(
                     62, 1, "3 street", -100.0
                 )
-            ), "+380001112233", "ivan@mail.ru"
+            ), "+380001112233", "mykyta@gmail.com"
         ), User(
-            "user_456", "Анна", "Петрова", listOf(
+            "user_456", "Anna", "Bogdanova", listOf(
                 Apartment(
                     55, 3, "55 street", -100.0
                 ), Apartment(
                     18, 6, "100 street"
                 )
-            ), "+380004445566", "anna@mail.ru"
+            ), "+380004445566", "anna@gmail.com"
         )
     )
 
     val outages = listOf(
-        Outage("вода", "Плановый ремонт труб", "15.05 10:00", "15.05 20:00"),
-        Outage("свет", "Авария на подстанции", "15.05 14:00", "Неизвестно", true)
+        Outage("вода", "Плановий ремонт труб", "15.05.2026 10:00", "15.05.2026 20:00"),
+        Outage("світло", "Аварія на підстанції", "15.05.2026 14:00", "Невідомо", true)
     )
 }
