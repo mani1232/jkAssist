@@ -399,17 +399,16 @@ fun ChatInputBar(
             OutlinedTextField(
                 value = inputText,
                 onValueChange = { inputText = it },
-                modifier = Modifier.weight(1f).onKeyEvent { event ->
-                    if (event.key == Key.Enter && !event.isShiftPressed && event.type == KeyEventType.KeyUp) {
+                modifier = Modifier.weight(1f).onPreviewKeyEvent { event ->
+                    if (event.key == Key.Enter && !event.isShiftPressed && event.type == KeyEventType.KeyDown) {
                         if (isSendEnabled) {
                             onToggleWelcome(false)
                             onSendMessage(inputText.trim())
                             inputText = ""
                         }
-                        true
-                    } else {
-                        false
+                        return@onPreviewKeyEvent true
                     }
+                    false
                 },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                 keyboardActions = KeyboardActions(onSend = {
