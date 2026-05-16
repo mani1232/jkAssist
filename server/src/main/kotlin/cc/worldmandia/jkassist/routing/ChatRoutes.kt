@@ -9,6 +9,7 @@ import cc.worldmandia.jkassist.agent.JkAgentFactory
 import cc.worldmandia.jkassist.jsonFormat
 import cc.worldmandia.jkassist.service.CrmServiceImpl
 import cc.worldmandia.jkassist.service.InfoService
+import cc.worldmandia.jkassist.service.OperatorConsole
 import io.ktor.http.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -34,6 +35,8 @@ fun Routing.chatRoutes() {
         crmService,
         infoService = infoService
     )
+
+    OperatorConsole.start()
 
     get("/api/chat/{sessionId}/history") {
         val sessionId = call.parameters["sessionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
