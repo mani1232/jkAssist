@@ -487,8 +487,6 @@ fun ChatBubble(msg: WsEvent.Message) {
         else -> "AI"
     }
 
-    val markdownState = rememberMarkdownState(msg.id, retainState = false) { msg.text }
-
     Column(
         modifier = Modifier.fillMaxWidth(), horizontalAlignment = when {
             isUser -> Alignment.End
@@ -545,7 +543,7 @@ fun ChatBubble(msg: WsEvent.Message) {
                 ), tonalElevation = if (isSysNotice) 0.dp else 1.dp
             ) {
                 Markdown(
-                    markdownState,
+                    content = msg.text,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                     colors = markdownColor(
                         text = when {

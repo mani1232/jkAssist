@@ -110,6 +110,12 @@ class ChatViewModel(
             is WsEvent.Error -> _state.update { it.copy(error = event.message) }
             is WsEvent.TransferToSupport -> _state.update { it.copy(isOperatorMode = true) }
             is WsEvent.SessionCreated -> {
+                if (event.sessionId != networkClient.sessionStorage.getSessionId()) {
+                    networkClient.sessionStorage.saveSessionId(event.sessionId)
+                    networkClient.disconnect()
+                    connect()
+                }
+
                 _state.update { it.copy(messages = emptyMap(), isHistoryLoaded = false) }
                 scope.launch { loadHistory(event.sessionId) }
             }

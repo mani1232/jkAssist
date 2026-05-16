@@ -181,10 +181,16 @@ private suspend fun DefaultWebSocketServerSession.handleAiResponse(
             }
 
             else -> {
+                val responseText = if (botResponse.isNotBlank()) {
+                    botResponse
+                } else {
+                    "Вибачте, сталася затримка при обробці запиту або я не зміг згенерувати відповідь. Будь ласка, перефразуйте питання."
+                }
+
                 val normalMsg = WsEvent.Message(
                     id = "bot-${Uuid.generateV7().toHexDashString()}",
                     role = Role.BOT,
-                    text = botResponse,
+                    text = responseText,
                     timestampMs = Clock.System.now()
                 )
                 ChatStateManager.saveUiMessage(sessionUuid, normalMsg)

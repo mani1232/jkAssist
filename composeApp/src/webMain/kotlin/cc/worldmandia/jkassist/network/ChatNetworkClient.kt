@@ -76,15 +76,8 @@ class ChatNetworkClient(
                 .filterIsInstance<Frame.Text>()
                 .map { jsonFormat.decodeFromString<WsEvent>(it.readText()) }
                 .collect { event ->
-                    handleSystemEvents(event)
                     onEvent(event)
                 }
-        }
-    }
-
-    private fun handleSystemEvents(event: WsEvent) {
-        if (event is WsEvent.SessionCreated) {
-            sessionStorage.saveSessionId(event.sessionId)
         }
     }
 

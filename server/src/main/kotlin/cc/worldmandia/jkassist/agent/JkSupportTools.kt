@@ -34,6 +34,7 @@ class JkSupportTools(
         }
     }
 
+    @OptIn(FormatStringsInDatetimeFormats::class)
     @LLMDescription("Отримати детальну інформацію про конкретну заявку за її ID (наприклад, REQ-1001).")
     @Tool
     fun getTicketDetails(
@@ -45,7 +46,13 @@ class JkSupportTools(
             - Категорія: ${ticket.category}
             - Опис: ${ticket.description}
             - Статус: ${ticket.status}
-            - Дата створення: ${ticket.date}
+            - Дата створення: ${
+            ticket.date.toLocalDateTime(TimeZone.currentSystemDefault()).format(
+                LocalDateTime.Format {
+                    byUnicodePattern("yyyy-MM-dd HH:mm")
+                }
+            )
+        }
         """.trimIndent()
     }
 
