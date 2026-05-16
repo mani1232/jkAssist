@@ -114,6 +114,8 @@ class ChatViewModel(
                     networkClient.sessionStorage.saveSessionId(event.sessionId)
                     networkClient.disconnect()
                     connect()
+                } else {
+                    networkClient.sessionStorage.saveSessionId(event.sessionId)
                 }
 
                 _state.update { it.copy(messages = emptyMap(), isHistoryLoaded = false) }
