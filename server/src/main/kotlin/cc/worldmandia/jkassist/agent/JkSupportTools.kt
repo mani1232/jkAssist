@@ -79,9 +79,9 @@ class JkSupportTools(
     @Tool
     suspend fun createTicket(
         @LLMDescription("ЗАВЖДИ використовуй системний ID користувача, переданий тобі на початку діалогу.") userId: String,
-        @LLMDescription("ApartmentNumber from can get from `getUserProfile`") apartmentNumber: Int,
+        @LLMDescription("Номери квартир можна отримати зі списку за допомогою функції `getUserProfile` та уточнити у мешканця, яка саме з них, якщо їх декілька") apartmentNumber: Int,
         @LLMDescription("Категорія проблеми") category: TicketCategory,
-        @LLMDescription("Priority проблеми") priority: String,
+        @LLMDescription("Priority проблеми, визначи сам") priority: String,
         @LLMDescription("Детальний опис проблеми") description: String
     ): String {
         val user = infoService.findUser(userId) ?: return "Помилка: користувача не знайдено."
