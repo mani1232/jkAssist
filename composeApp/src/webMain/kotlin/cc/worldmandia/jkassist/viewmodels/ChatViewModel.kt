@@ -59,7 +59,7 @@ class ChatViewModel(
                     _state.update {
                         it.copy(
                             isConnecting = false,
-                            error = "Нет подключения к серверу. Повторяем попытку..."
+                            error = "Немає з'єднання з сервером. Повторюємо спробу..."
                         )
                     }
                 } finally {
@@ -94,7 +94,7 @@ class ChatViewModel(
         when (event) {
             is WsEvent.Message -> {
                 _state.update { currentState ->
-                    val isEndMessage = event.role == Role.SYSTEM && event.text.contains("Оператор завершил диалог")
+                    val isEndMessage = event.role == Role.SYSTEM && event.text.contains("Оператор завершив діалог")
                     currentState.copy(
                         messages = currentState.messages + (event.id to event),
                         isOperatorMode = !isEndMessage && currentState.isOperatorMode
@@ -120,7 +120,7 @@ class ChatViewModel(
             try {
                 networkClient.sendMessage(text)
             } catch (_: Exception) {
-                _state.update { it.copy(error = "Ошибка отправки: проверьте соединение") }
+                _state.update { it.copy(error = "Помилка під час надсилання: перевірте з'єднання") }
             }
         }
     }

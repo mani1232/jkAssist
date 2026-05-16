@@ -91,7 +91,7 @@ class ChatNetworkClient(
     suspend fun sendMessage(text: String) {
         val session = webSocketSession
         if (session == null || !session.isActive) {
-            throw IllegalStateException("Нет активного вебсокет-соединения")
+            throw IllegalStateException("Немає активного з'єднання через вебсокет")
         }
         session.send(Frame.Text(text))
     }

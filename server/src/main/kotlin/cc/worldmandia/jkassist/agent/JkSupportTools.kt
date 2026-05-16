@@ -6,79 +6,102 @@ import ai.koog.agents.core.tools.reflect.ToolSet
 import cc.worldmandia.jkassist.TicketCategory
 import cc.worldmandia.jkassist.service.CrmService
 import cc.worldmandia.jkassist.service.InfoService
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format
+import kotlinx.datetime.format.FormatStringsInDatetimeFormats
+import kotlinx.datetime.format.byUnicodePattern
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
 
-@LLMDescription("Системные инструменты ЖК")
+@LLMDescription("Інструменти ШІ-диспетчера")
 class JkSupportTools(
     private val crmService: CrmService,
     private val infoService: InfoService
 ) : ToolSet {
 
-    @LLMDescription("Показать список всех заявок пользователя.")
+    @LLMDescription("Показати список усіх поточних заявок користувача.")
     @Tool
     fun listMyTickets(
-        @LLMDescription("ID пользователя из контекста") userId: String
+        @LLMDescription("ID користувача з контексту") userId: String
     ): String {
         val tickets = infoService.getUserTickets(userId)
-        if (tickets.isEmpty()) return "У вас пока нет созданных заявок."
+        if (tickets.isEmpty()) return "У вас поки що немає створених заявок."
 
-        return "Ваши заявки:\n" + tickets.joinToString("\n") {
+        return "Ваші заявки:\n" + tickets.joinToString("\n") {
             "- **${it.id}**: ${it.description} (Статус: ${it.status})"
         }
     }
 
-    @LLMDescription("Получить подробную информацию о конкретной заявке по её ID (например, REQ-1001).")
+    @LLMDescription("Отримати детальну інформацію про конкретну заявку за її ID (наприклад, REQ-1001).")
     @Tool
     fun getTicketDetails(
         @LLMDescription("ID заявки") ticketId: String
     ): String {
-        val ticket = infoService.getTicketById(ticketId) ?: return "Заявка $ticketId не найдена."
+        val ticket = infoService.getTicketById(ticketId) ?: return "Заявку $ticketId не знайдено."
         return """
-            Детали заявки **${ticket.id}**:
-            - Категория: ${ticket.category}
-            - Описание: ${ticket.description}
+            Деталі заявки **${ticket.id}**:
+            - Категорія: ${ticket.category}
+            - Опис: ${ticket.description}
             - Статус: ${ticket.status}
-            - Дата создания: ${ticket.date}
+            - Дата створення: ${ticket.date}
         """.trimIndent()
     }
 
-    @LLMDescription("Очистить историю диалога и начать новую сессию. Вызывай, если пользователь просит забыть контекст, стереть историю или начать всё сначала.")
+    @LLMDescription("Очистити історію діалогу та почати нову сесію. Викликай, якщо користувач просить забути контекст, стерти історію або почати все спочатку.")
     @Tool
-    fun resetSession(): String = "[RESET_REQUESTED] История диалога была успешно очищена."
+    fun resetSession(): String = "[RESET_REQUESTED] Історія діалогу була успішно очищена."
 
-    @LLMDescription("Проверить наличие отключений воды, света или других ресурсов.")
+    @LLMDescription("Перевірити наявність планових чи аварійних відключень води, світла або інших ресурсів.")
     @Tool
     fun checkOutages(
-        @LLMDescription("Тип ресурса (вода, свет, лифт)") resource: String? = null
+        @LLMDescription("Тип ресурсу (наприклад: вода, світло, ліфт)") resource: String? = null
     ): String {
         val list = infoService.getOutages(resource)
-        if (list.isEmpty()) return "Информации об отключениях по запросу '$resource' нет."
+        val queryText = resource?.let { " за запитом «$it»" } ?: ""
+
+        if (list.isEmpty()) return "Інформації про відключення$queryText немає."
 
         return list.joinToString("\n") {
-            "${if (it.isEmergency) "🚨" else "📅"} ${it.type.uppercase()}: ${it.description}. Окончание: ${it.estimatedEndTime}"
+            "${if (it.isEmergency) "🚨" else "📅"} ${it.type.uppercase()}: ${it.description}. Орієнтовний кінець: ${it.estimatedEndTime}"
         }
     }
 
-    @LLMDescription("Получить информацию о пользователе (баланс, квартира) по его ID.")
+    @LLMDescription("Отримати інформацію про профіль користувача (баланс, номер квартири) за його ID.")
     @Tool
     fun getUserProfile(
-        @LLMDescription("ВСЕГДА используй системный ID пользователя, переданный тебе в начале диалога.") userId: String
+        @LLMDescription("ЗАВЖДИ використовуй системний ID користувача, переданий тобі на початку діалогу.") userId: String
     ): String {
-        val user = infoService.findUser(userId) ?: return "Пользователь не найден."
-        return "Жилец: ${user.surname} ${user.username}, кв. ${user.apartment}. Баланс: ${user.balance} руб."
+        val user = infoService.findUser(userId) ?: return "Користувача не знайдено."
+        return "Мешканець: ${user.surname} ${user.username}, кв. ${user.apartment}. Баланс: ${user.balance} грн."
     }
 
-    @LLMDescription("Создать заявку в CRM. Требует ID пользователя.")
+    @LLMDescription("Створити нову заявку в CRM. Вимагає ID користувача.")
     @Tool
     suspend fun createTicket(
-        @LLMDescription("ВСЕГДА используй системный ID пользователя, переданный тебе в начале диалога.") userId: String,
-        @LLMDescription("Категория") category: TicketCategory,
-        @LLMDescription("Описание") description: String
+        @LLMDescription("ЗАВЖДИ використовуй системний ID користувача, переданий тобі на початку діалогу.") userId: String,
+        @LLMDescription("Категорія проблеми") category: TicketCategory,
+        @LLMDescription("Детальний опис проблеми") description: String
     ): String {
-        val user = infoService.findUser(userId) ?: return "Ошибка: пользователь не найден."
+        val user = infoService.findUser(userId) ?: return "Помилка: користувача не знайдено."
         val ticket = crmService.registerEmergency(category, user.apartment, description, false, userId)
-        return "Заявка **${ticket.id}** создана для квартиры ${user.apartment}."
+        return "Заявка **${ticket.id}** успішно створена для квартири ${user.apartment}."
     }
 
+    @LLMDescription("Перевести діалог на живого оператора підтримки.")
     @Tool
-    fun requestOperator(reason: String): String = "[TRANSFER_REQUESTED] Причина: $reason"
+    fun requestOperator(
+        @LLMDescription("Коротка причина переводу") reason: String
+    ): String = "[TRANSFER_REQUESTED] Причина: $reason"
+
+    @OptIn(FormatStringsInDatetimeFormats::class)
+    @Tool
+    @LLMDescription("Отримання поточної актуальної дати та часу.")
+    fun requestDate(): String = """
+        Поточна дата та час: ${
+        Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).format(LocalDateTime.Format {
+            byUnicodePattern("yyyy-MM-dd'T'HH:mm:ss[.SSS]")
+        })
+    }
+    """.trimIndent()
 }

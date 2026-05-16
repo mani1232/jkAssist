@@ -30,11 +30,11 @@ class CrmServiceImpl : CrmService {
             userId = userId,
             category = category,
             description = description,
-            status = "Ожидание",
+            status = "Очікування",
             date = Clock.System.now()
         ).also {
             MockDatabase.tickets.add(it)
-            logger.info("🎟️ Заявка создана: $it | Категория: $category | Квартира: $apartment | Срочно: $urgent")
+            logger.info("🎟️ Заявка створена: $it | Категорія: $category | Квартира: $apartment | Терміново: $urgent")
         }
     }
 }

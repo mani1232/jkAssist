@@ -1,6 +1,7 @@
 package cc.worldmandia.jkassist.ui.components
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -9,8 +10,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -21,7 +25,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -130,10 +140,10 @@ fun ChatScreen(
 @Composable
 fun WelcomeInfo(onSuggestionClick: (String) -> Unit) {
     val suggestions = listOf(
-        "Вызвать электрика",
-        "Передать показания счетчиков",
-        "Вопрос по квитанции за месяц",
-        "Когда отключат горячую воду?"
+        "Викликати електрика",
+        "Передати показання лічильників",
+        "Питання щодо квитанції за місяць",
+        "Коли відключать гарячу воду?"
     )
 
     Column(
@@ -151,14 +161,18 @@ fun WelcomeInfo(onSuggestionClick: (String) -> Unit) {
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Добро пожаловать!",
+            text = "Ласкаво просимо!",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Я — ваш ИИ-диспетчер. Помогу с вопросами по ЖКХ, вызовом мастеров и оплатой квитанций.",
+            text = """
+                Я — ваш штучний інтелект-диспетчер. 
+                Допоможу з питаннями щодо комунальних послуг, викликом майстрів,
+                оплатою рахунків та управлінням будинком.
+            """.trimIndent(),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -212,19 +226,35 @@ fun ChatTopBar(
     TopAppBar(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .clip(CircleShape)
+                        .background(
+                            when {
+                                isConnected -> MaterialTheme.colorScheme.primary
+                                isConnecting -> MaterialTheme.colorScheme.tertiary
+                                else -> MaterialTheme.colorScheme.error
+                            }
+                        )
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                    text = if (isOperatorMode) "Чат із оператором" else "AI Home",
+                    fontWeight = FontWeight.Bold
+                )
+
                 if (isConnected) {
                     IconButton(onClick = { onToggleWelcome(!isShowingWelcome) }) {
                         Icon(
                             imageVector = if (isShowingWelcome) Icons.Outlined.ChatBubbleOutline else Icons.Outlined.Info,
-                            contentDescription = "Показать информацию",
+                            contentDescription = "Показати інформацію",
                             tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                 }
-                Text(
-                    text = if (isOperatorMode) "Чат с оператором" else "ИИ Диспетчер ЖКХ",
-                    fontWeight = FontWeight.Bold
-                )
             }
         }, actions = {
             when {
@@ -241,7 +271,7 @@ fun ChatTopBar(
                     IconButton(onClick = onReconnect) {
                         Icon(
                             imageVector = Icons.Default.Warning,
-                            contentDescription = "Переподключиться",
+                            contentDescription = "Перепідключитися",
                             tint = MaterialTheme.colorScheme.error
                         )
                     }
@@ -277,22 +307,37 @@ fun MessageList(
         contentPadding = PaddingValues(vertical = 16.dp)
     ) {
         items(items = messages, key = { it.id }) { msg ->
-            ChatBubble(msg)
-            Spacer(modifier = Modifier.height(8.dp))
+            val visibleState = remember { MutableTransitionState(false).apply { targetState = true } }
+
+            AnimatedVisibility(
+                visibleState = visibleState,
+                modifier = Modifier.animateItem(),
+                enter = fadeIn(animationSpec = tween(300)) + slideInVertically(
+                    initialOffsetY = { it / 2 },
+                    animationSpec = tween(300)
+                )
+            ) {
+                Column {
+                    ChatBubble(msg)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
         }
 
         item {
             AnimatedVisibility(
                 visible = isTyping,
+                modifier = Modifier.animateItem(),
                 enter = fadeIn() + slideInVertically { it / 2 },
-                exit = fadeOut() + slideOutVertically { it / 2 }) {
+                exit = fadeOut() + slideOutVertically { it / 2 }
+            ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(
                         modifier = Modifier.padding(start = 8.dp).size(12.dp),
                         strokeWidth = 2.dp
                     )
                     Text(
-                        text = if (isOperatorMode) " Оператор печатает..." else " Диспетчер анализирует...",
+                        text = if (isOperatorMode) " Оператор друкує..." else " AI аналізує...",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         modifier = Modifier.padding(start = 6.dp, top = 4.dp, bottom = 4.dp)
@@ -320,10 +365,10 @@ fun ChatInputBar(
     if (showDevAlert) {
         AlertDialog(
             onDismissRequest = { showDevAlert = false },
-            title = { Text(text = "В разработке", fontWeight = FontWeight.Bold) },
-            text = { Text(text = "Функции отправки медиафайлов и записи голосовых сообщений появятся в ближайших обновлениях.") },
+            title = { Text(text = "У розробці", fontWeight = FontWeight.Bold) },
+            text = { Text(text = "Функції надсилання медіафайлів та запису голосових повідомлень з’являться в найближчих оновленнях.") },
             confirmButton = {
-                TextButton(onClick = { showDevAlert = false }) { Text("Понятно") }
+                TextButton(onClick = { showDevAlert = false }) { Text("Зрозуміло") }
             }
         )
     }
@@ -347,7 +392,7 @@ fun ChatInputBar(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.AddCircle,
-                    contentDescription = "Прикрепить фото",
+                    contentDescription = "Додати фото",
                     tint = if (isMediaEnabled) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                 )
@@ -356,12 +401,31 @@ fun ChatInputBar(
             OutlinedTextField(
                 value = inputText,
                 onValueChange = { inputText = it },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).onKeyEvent { event ->
+                    if (event.nativeKeyEvent == Key.Enter && !event.isShiftPressed && event.type == KeyEventType.KeyUp) {
+                        if (isSendEnabled) {
+                            onToggleWelcome(false)
+                            onSendMessage(inputText.trim())
+                            inputText = ""
+                        }
+                        true
+                    } else {
+                        false
+                    }
+                },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                keyboardActions = KeyboardActions(onSend = {
+                    if (isSendEnabled) {
+                        onToggleWelcome(false)
+                        onSendMessage(inputText.trim())
+                        inputText = ""
+                    }
+                }),
                 placeholder = {
                     Text(
-                        if (!isHistoryLoaded) "Загрузка..."
-                        else if (!isConnected) "Подключение..."
-                        else "Сообщение..."
+                        if (!isHistoryLoaded) "Завантаження..."
+                        else if (!isConnected) "Підключення..."
+                        else "Повідомлення..."
                     )
                 },
                 enabled = true,
@@ -390,7 +454,7 @@ fun ChatInputBar(
                         modifier = Modifier.size(52.dp),
                         shape = RoundedCornerShape(16.dp)
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Отправить")
+                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Надіслати")
                     }
                 } else {
                     FilledIconButton(
@@ -403,7 +467,7 @@ fun ChatInputBar(
                             contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                     ) {
-                        Icon(Icons.Outlined.Mic, contentDescription = "Записать аудио")
+                        Icon(Icons.Outlined.Mic, contentDescription = "Записати аудіо")
                     }
                 }
             }
@@ -420,10 +484,10 @@ fun ChatBubble(msg: WsEvent.Message) {
     val isOperator = msg.role == Role.SYSTEM && !msg.text.startsWith("*")
 
     val senderName = when {
-        isUser -> "Вы"
+        isUser -> "Ви"
         isSysNotice -> "Система"
         isOperator -> "Оператор"
-        else -> "Диспетчер"
+        else -> "AI"
     }
 
     val markdownState = rememberMarkdownState(msg.id, retainState = false) { msg.text }
@@ -476,7 +540,7 @@ fun ChatBubble(msg: WsEvent.Message) {
                 color = when {
                     isSysNotice -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                     isUser -> MaterialTheme.colorScheme.primaryContainer
-                    isOperator -> MaterialTheme.colorScheme.tertiaryContainer // Отдельный фон для оператора
+                    isOperator -> MaterialTheme.colorScheme.tertiaryContainer
                     else -> MaterialTheme.colorScheme.surfaceVariant
                 }, shape = RoundedCornerShape(16.dp).copy(
                     bottomEnd = CornerSize(if (isUser && !isSysNotice) 4.dp else 16.dp),

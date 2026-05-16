@@ -55,7 +55,7 @@ fun main() {
     embeddedServer(CIO, configure = {
         connectors.add(EngineConnectorBuilder().apply {
             host = "0.0.0.0"
-            port = System.getenv("PORT")?.toIntOrNull() ?: 8800
+            port = System.getenv("PORT")?.toIntOrNull() ?: SERVER_PORT
         })
         connectionGroupSize = 2
         workerGroupSize = 5

@@ -31,7 +31,7 @@ import kotlin.uuid.Uuid
 
 private val logger = LoggerFactory.getLogger("ChatRoutes")
 
-@OptIn(ExperimentalUuidApi::class, FormatStringsInDatetimeFormats::class)
+@OptIn(ExperimentalUuidApi::class)
 fun Routing.chatRoutes() {
     val crmService = CrmServiceImpl()
     val infoService = InfoService()
@@ -59,22 +59,20 @@ fun Routing.chatRoutes() {
 
         logger.info("🟢 Чат подключен: userId=$userId, session=$sessionUuid")
         val session = agent.createSession(sessionUuid)
-        session.run(
-            """
-            [СИСТЕМНОЕ СООБЩЕНИЕ] Установлено соединение. ID текущего собеседника: $userId. Сохрани этот ID в контексте и ВСЕГДА используй его как аргумент `userId` для вызова инструментов. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО просить пользователя назвать свой ID.
-            Используй эту дату что бы давать актуальную информацию, сегодня ${
-                Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).format(LocalDateTime.Format {
-                    byUnicodePattern("yyyy-MM-dd'T'HH:mm:ss[.SSS]")
-                })
-            }
-            """.trimIndent()
-        )
 
+        if (ChatStateManager.getUiHistory(sessionUuid).isEmpty()) {
+            session.run(
+                """
+            [СИСТЕМНОЕ СООБЩЕНИЕ] Установлено соединение. ID текущего собеседника: $userId. Сохрани этот ID в контексте и ВСЕГДА используй его как аргумент `userId` для вызова инструментов. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО просить пользователя назвать свой ID.
+            """.trimIndent()
+            )
+        }
+        
         sendEvent(WsEvent.SessionCreated(sessionUuid))
 
         if (ChatStateManager.isWaitingForOperator(sessionUuid)) {
             sendEvent(WsEvent.TransferToSupport)
-            startOperatorConsole(sessionUuid, "Восстановление сессии после переподключения")
+            listenToOperator(sessionUuid)
         }
 
         try {
@@ -103,6 +101,38 @@ fun Routing.chatRoutes() {
             }
         } catch (e: Exception) {
             handleDisconnect(e, userId, sessionUuid)
+        }
+    }
+}
+
+@OptIn(ExperimentalUuidApi::class)
+private fun DefaultWebSocketServerSession.listenToOperator(sessionUuid: String) {
+    launch(Dispatchers.IO) {
+        val channel = ChatStateManager.getOperatorChannel(sessionUuid)
+
+        for (operatorText in channel) {
+            if (operatorText.trim().lowercase() == "end") {
+                ChatStateManager.removeWaitingStatus(sessionUuid)
+                val endMsg = WsEvent.Message(
+                    id = "sys-${Uuid.generateV7().toHexDashString()}",
+                    role = Role.SYSTEM,
+                    text = "*(Системное сообщение)* Оператор завершил диалог. Бот снова с вами.",
+                    timestampMs = Clock.System.now()
+                )
+                sendEvent(endMsg)
+                break
+            }
+
+            if (operatorText.isNotBlank()) {
+                val opMsg = WsEvent.Message(
+                    id = "op-${Uuid.generateV7().toHexDashString()}",
+                    role = Role.SYSTEM,
+                    text = operatorText,
+                    timestampMs = Clock.System.now()
+                )
+                ChatStateManager.saveUiMessage(sessionUuid, opMsg)
+                sendEvent(opMsg)
+            }
         }
     }
 }

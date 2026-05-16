@@ -10,6 +10,7 @@ import cc.worldmandia.jkassist.WsEvent
 import cc.worldmandia.jkassist.jsonFormat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -72,15 +73,15 @@ object ChatStateManager {
 
                         sessionMemoryHistory.store(sessionId, agentMessages)
 
-                        val lastTransfer = messages.indexOfLast { it.text.contains("Переключаю вас на специалиста") }
-                        val lastEnd = messages.indexOfLast { it.text.contains("Оператор завершил диалог") }
+                        val lastTransfer = messages.indexOfLast { it.text.contains("Переключаю вас на фахівця") }
+                        val lastEnd = messages.indexOfLast { it.text.contains("Оператор завершив діалог") }
                         if (lastTransfer > lastEnd) {
                             waitingChats[sessionId] = messages[lastTransfer].timestampMs
                         }
                     }
                 }
             } catch (e: Exception) {
-                println("Ошибка восстановления истории: ${e.message}")
+                println("Помилка під час відновлення історії: ${e.message}")
             }
         }
     }
@@ -103,7 +104,7 @@ object ChatStateManager {
         try {
             uiHistoryFile.writeText(jsonFormat.encodeToString(uiHistory.toMutableMap()))
         } catch (e: Exception) {
-            println("Ошибка сохранения истории в файл: ${e.message}")
+            println("Помилка під час збереження історії у файл: ${e.message}")
         }
     }
 
@@ -117,5 +118,17 @@ object ChatStateManager {
 
     fun removeWaitingStatus(sessionId: String) {
         waitingChats.remove(sessionId)
+    }
+
+    private val operatorChannels = ConcurrentHashMap<String, Channel<String>>()
+
+    fun getOperatorChannel(sessionId: String): Channel<String> {
+        return operatorChannels.computeIfAbsent(sessionId) { Channel(Channel.BUFFERED) }
+    }
+
+    suspend fun sendOperatorMessage(sessionId: String, text: String) {
+        if (isWaitingForOperator(sessionId)) {
+            getOperatorChannel(sessionId).send(text)
+        }
     }
 }
