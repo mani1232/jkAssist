@@ -44,8 +44,8 @@ object MockDatabase {
             id = "REQ-1001",
             userId = "user_123",
             category = TicketCategory.PLUMBING,
-            description = "Капает кран на кухне",
-            status = "Назначен мастер",
+            description = "На кухні капає кран",
+            status = "Призначено майстра",
             date = Instant.parse("2026-04-16T18:43:00Z")
         )
     )
