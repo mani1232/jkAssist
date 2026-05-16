@@ -1,6 +1,7 @@
 package cc.worldmandia.jkassist
 
 import cc.worldmandia.jkassist.routing.chatRoutes
+import cc.worldmandia.jkassist.service.OperatorConsole
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -21,6 +22,8 @@ val jsonFormat = Json {
 
 fun Application.module() {
     installPlugins()
+
+    OperatorConsole.start()
 
     routing {
         chatRoutes()

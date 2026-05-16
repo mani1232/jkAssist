@@ -13,8 +13,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
@@ -27,29 +25,31 @@ object ChatStateManager {
 
     private val waitingChats = mutableMapOf<String, Instant>()
 
-    private val uiHistoryFile = File("ui_history.json")
+    private val historyDir = File("ui_history").apply { mkdirs() }
+
     private val uiHistory = ConcurrentHashMap<String, MutableList<WsEvent.Message>>()
-    private val fileMutex = Mutex()
+
+    fun getWaitingSessions(): Map<String, Instant> = waitingChats.toMap()
 
     fun saveUiMessage(sessionId: String, message: WsEvent.Message) {
         val history = uiHistory.computeIfAbsent(sessionId) { CopyOnWriteArrayList() }
         history.add(message)
 
         CoroutineScope(Dispatchers.IO).launch {
-            fileMutex.withLock {
-                uiHistoryFile.writeText(jsonFormat.encodeToString(uiHistory.toMutableMap()))
-            }
+            val sessionFile = File(historyDir, "$sessionId.json")
+            sessionFile.writeText(jsonFormat.encodeToString(history.toList()))
         }
     }
 
     init {
-        if (uiHistoryFile.exists()) {
-            try {
-                val data =
-                    jsonFormat.decodeFromString<MutableMap<String, List<WsEvent.Message>>>(uiHistoryFile.readText())
+        val files = historyDir.listFiles { _, name -> name.endsWith(".json") }
+        if (files != null) {
+            for (file in files) {
+                try {
+                    val sessionId = file.nameWithoutExtension
+                    val messages = jsonFormat.decodeFromString<List<WsEvent.Message>>(file.readText())
 
-                runBlocking {
-                    data.forEach { (sessionId, messages) ->
+                    runBlocking {
                         uiHistory[sessionId] = messages.toMutableList()
 
                         val agentMessages = messages.map { msg ->
@@ -58,12 +58,10 @@ object ChatStateManager {
                                     content = msg.text,
                                     metaInfo = RequestMetaInfo(timestamp = msg.timestampMs)
                                 )
-
                                 Role.BOT -> Message.Assistant(
                                     content = msg.text,
                                     metaInfo = ResponseMetaInfo(timestamp = msg.timestampMs)
                                 )
-
                                 Role.SYSTEM -> Message.System(
                                     content = msg.text,
                                     metaInfo = RequestMetaInfo(timestamp = msg.timestampMs)
@@ -79,9 +77,9 @@ object ChatStateManager {
                             waitingChats[sessionId] = messages[lastTransfer].timestampMs
                         }
                     }
+                } catch (e: Exception) {
+                    println("Помилка під час відновлення історії з файлу ${file.name}: ${e.message}")
                 }
-            } catch (e: Exception) {
-                println("Помилка під час відновлення історії: ${e.message}")
             }
         }
     }
@@ -91,21 +89,16 @@ object ChatStateManager {
         sessionMemoryHistory.store(sessionId, emptyList())
         waitingChats.remove(sessionId)
 
-        // File("ai-history/$sessionId.json").delete() Keep for history
+        val sessionFile = File(historyDir, "$sessionId.json")
+        if (sessionFile.exists()) {
+            sessionFile.delete()
+        }
 
-        saveToFile()
+        // File("ai-history/$sessionId.json").delete() // keep for analytics
     }
 
     fun getUiHistory(sessionId: String): List<WsEvent.Message> {
         return uiHistory[sessionId] ?: emptyList()
-    }
-
-    private fun saveToFile() {
-        try {
-            uiHistoryFile.writeText(jsonFormat.encodeToString(uiHistory.toMutableMap()))
-        } catch (e: Exception) {
-            println("Помилка під час збереження історії у файл: ${e.message}")
-        }
     }
 
     fun isWaitingForOperator(sessionId: String): Boolean {

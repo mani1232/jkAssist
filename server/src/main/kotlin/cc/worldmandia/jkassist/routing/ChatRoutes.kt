@@ -51,13 +51,13 @@ fun Routing.chatRoutes() {
         val userId = call.request.queryParameters["userId"] ?: "anonymous"
         val sessionUuid = call.request.queryParameters["sessionId"] ?: Uuid.generateV7().toHexDashString()
 
-        logger.info("🟢 Чат подключен: userId=$userId, session=$sessionUuid")
+        logger.info("🟢 Чат підключено: userId=$userId, session=$sessionUuid")
         val session = agent.createSession(sessionUuid)
 
         if (ChatStateManager.getUiHistory(sessionUuid).isEmpty()) {
             session.run(
                 """
-            [СИСТЕМНОЕ СООБЩЕНИЕ] Установлено соединение. ID текущего собеседника: $userId. Сохрани этот ID в контексте и ВСЕГДА используй его как аргумент `userId` для вызова инструментов. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО просить пользователя назвать свой ID.
+            [СИСТЕМНЕ ПОВІДОМЛЕННЯ] З'єднання встановлено. ID поточного співрозмовника: $userId. Збережи цей ID у контексті та ЗАВЖДИ використовуй його як аргумент `userId` для виклику інструментів. КАТЕГОРИЧНО ЗАБОРОНЕНО просити користувача назвати свій ID.
             """.trimIndent()
             )
         }
@@ -110,51 +110,10 @@ private fun DefaultWebSocketServerSession.listenToOperator(sessionUuid: String) 
                 val endMsg = WsEvent.Message(
                     id = "sys-${Uuid.generateV7().toHexDashString()}",
                     role = Role.SYSTEM,
-                    text = "*(Системное сообщение)* Оператор завершил диалог. Бот снова с вами.",
+                    text = "*(Системне повідомлення)* Оператор завершив діалог. Бот знову з вами.",
                     timestampMs = Clock.System.now()
                 )
                 sendEvent(endMsg)
-                break
-            }
-
-            if (operatorText.isNotBlank()) {
-                val opMsg = WsEvent.Message(
-                    id = "op-${Uuid.generateV7().toHexDashString()}",
-                    role = Role.SYSTEM,
-                    text = operatorText,
-                    timestampMs = Clock.System.now()
-                )
-                ChatStateManager.saveUiMessage(sessionUuid, opMsg)
-                sendEvent(opMsg)
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalUuidApi::class)
-private fun DefaultWebSocketServerSession.startOperatorConsole(sessionUuid: String, reason: String? = null) {
-    launch(Dispatchers.IO) {
-        println("\n=======================================================")
-        println("👨‍💻 [ОПЕРАТОР] Активная сессия: $sessionUuid")
-        if (reason != null) println("👨‍💻 $reason")
-        println("👨‍💻 Введите ответ в консоль и нажмите Enter.")
-        println("👨‍💻 (Для возврата к ИИ введите слово 'end')")
-        println("=======================================================\n")
-
-        while (ChatStateManager.isWaitingForOperator(sessionUuid)) {
-            val operatorText = readlnOrNull() ?: continue
-
-            if (operatorText.trim().lowercase() == "end") {
-                ChatStateManager.removeWaitingStatus(sessionUuid)
-                val endMsg = WsEvent.Message(
-                    id = "sys-${Uuid.generateV7().toHexDashString()}",
-                    role = Role.SYSTEM,
-                    text = "*(Системное сообщение)* Оператор завершил диалог. Бот снова с вами.",
-                    timestampMs = Clock.System.now()
-                )
-                ChatStateManager.saveUiMessage(sessionUuid, endMsg)
-                sendEvent(endMsg)
-                println("👨‍💻 Вы вышли из режима оператора для сессии $sessionUuid.\n")
                 break
             }
 
@@ -173,7 +132,7 @@ private fun DefaultWebSocketServerSession.startOperatorConsole(sessionUuid: Stri
 }
 
 private fun DefaultWebSocketServerSession.handleOperatorSimulation(userText: String) {
-    println("👤 [ПОЛЬЗОВАТЕЛЬ]: $userText")
+    logger.warn("👤 [КОРИСТУВАЧ]: $userText")
 }
 
 @OptIn(ExperimentalUuidApi::class)
@@ -194,14 +153,15 @@ private suspend fun DefaultWebSocketServerSession.handleAiResponse(
                 val transferMsg = WsEvent.Message(
                     id = "bot-${Uuid.generateV7().toHexDashString()}",
                     role = Role.BOT,
-                    text = "Переключаю вас на специалиста. Пожалуйста, подождите...",
+                    text = "Переключаю вас на фахівця. Будь ласка, зачекайте...",
                     timestampMs = Clock.System.now()
                 )
                 ChatStateManager.saveUiMessage(sessionUuid, transferMsg)
                 sendEvent(transferMsg)
                 sendEvent(WsEvent.TransferToSupport)
 
-                startOperatorConsole(sessionUuid, "Причина: $reason")
+                println("\n👨‍💻 [ОПЕРАТОР] Новий запит! Сесія: $sessionUuid | Причина: $reason")
+                listenToOperator(sessionUuid)
             }
 
             botResponse.contains("[RESET_REQUESTED]") -> {
@@ -211,16 +171,17 @@ private suspend fun DefaultWebSocketServerSession.handleAiResponse(
 
                 val resetMsg = WsEvent.Message(
                     id = "sys-${Uuid.generateV7().toHexDashString()}",
-                    role = Role.BOT,
-                    text = "Сессия обновлена. История очищена.",
+                    role = Role.SYSTEM,
+                    text = "*(Системне повідомлення)* Сесія оновлена. Історія очищена.",
                     timestampMs = Clock.System.now()
                 )
 
                 ChatStateManager.saveUiMessage(newSessionUuid, resetMsg)
-                sendEvent(resetMsg)
-                sendEvent(WsEvent.SessionCreated(newSessionUuid))
 
-                session.run("[СИСТЕМНОЕ СООБЩЕНИЕ] Установлено новое соединение после очистки истории. ID текущего собеседника: $userId. Сохрани этот ID в контексте и ВСЕГДА используй его как аргумент `userId` для вызова инструментов. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО просить пользователя назвать свой ID.")
+                sendEvent(WsEvent.SessionCreated(newSessionUuid))
+                sendEvent(resetMsg)
+
+                session.run("[СИСТЕМНЕ ПОВІДОМЛЕННЯ] Після очищення історії встановлено нове з'єднання. ID поточного співрозмовника: $userId. Збережи цей ID у контексті та ЗАВЖДИ використовуй його як аргумент `userId` для виклику інструментів. КАТЕГОРИЧНО ЗАБОРОНЕНО просити користувача назвати свій ID.")
             }
 
             else -> {
@@ -238,7 +199,7 @@ private suspend fun DefaultWebSocketServerSession.handleAiResponse(
         throw e
     } catch (e: Exception) {
         logger.error("🔴 Ошибка LLM: ${e.message}", e)
-        sendEvent(WsEvent.Error("Внутренняя ошибка. Попробуйте еще раз."))
+        sendEvent(WsEvent.Error("Внутрішня помилка. Спробуйте ще раз."))
     }
 }
 

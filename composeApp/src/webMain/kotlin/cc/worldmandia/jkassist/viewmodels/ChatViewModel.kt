@@ -21,8 +21,7 @@ data class ChatState(
 )
 
 class ChatViewModel(
-    private val scope: CoroutineScope,
-    private val networkClient: ChatNetworkClient
+    private val scope: CoroutineScope, private val networkClient: ChatNetworkClient
 ) {
     private val _state = MutableStateFlow(ChatState())
     val state = _state.asStateFlow()
@@ -49,8 +48,7 @@ class ChatViewModel(
                     networkClient.connectWebSocket(
                         onConnected = {
                             _state.update { it.copy(isConnecting = false, isConnected = true) }
-                        },
-                        onEvent = ::handleIncomingEvent
+                        }, onEvent = ::handleIncomingEvent
                     )
                 } catch (e: CancellationException) {
                     throw e
@@ -58,15 +56,13 @@ class ChatViewModel(
                     networkClient.disconnect()
                     _state.update {
                         it.copy(
-                            isConnecting = false,
-                            error = "Немає з'єднання з сервером. Повторюємо спробу..."
+                            isConnecting = false, error = "Немає з'єднання з сервером. Повторюємо спробу..."
                         )
                     }
                 } finally {
                     _state.update {
                         it.copy(
-                            isConnected = false,
-                            isTyping = false
+                            isConnected = false, isTyping = false
                         )
                     }
                     delay(5.seconds)
@@ -80,9 +76,16 @@ class ChatViewModel(
             val history = networkClient.getHistory(sessionId)
             _state.update { currentState ->
                 val mergedMessages = history.associateBy { it.id } + currentState.messages
+
+                val messagesList = mergedMessages.values.toList()
+                val lastTransfer = messagesList.indexOfLast { it.text.contains("Переключаю вас на фахівця") }
+                val lastEnd = messagesList.indexOfLast { it.role == Role.SYSTEM && it.text.contains("Оператор завершив діалог") }
+                val isOperatorActive = lastTransfer > lastEnd
+
                 currentState.copy(
                     messages = mergedMessages,
-                    isHistoryLoaded = true
+                    isHistoryLoaded = true,
+                    isOperatorMode = isOperatorActive
                 )
             }
         } catch (_: Exception) {
@@ -107,7 +110,7 @@ class ChatViewModel(
             is WsEvent.Error -> _state.update { it.copy(error = event.message) }
             is WsEvent.TransferToSupport -> _state.update { it.copy(isOperatorMode = true) }
             is WsEvent.SessionCreated -> {
-                _state.update { it.copy(messages = emptyMap()) }
+                _state.update { it.copy(messages = emptyMap(), isHistoryLoaded = false) }
                 scope.launch { loadHistory(event.sessionId) }
             }
         }
