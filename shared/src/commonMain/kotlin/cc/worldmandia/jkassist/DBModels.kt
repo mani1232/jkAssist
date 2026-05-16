@@ -8,10 +8,14 @@ data class User(
     val id: String,
     val username: String,
     val surname: String,
-    val apartment: String,
+    val apartments: List<Apartment>,
     val phoneNumber: String,
-    val email: String,
-    val balance: Double = 0.0
+    val email: String
+)
+
+@Serializable
+data class Apartment(
+    val number: Int, val countOfRoom: Int, val address: String, val balancePerApartment: Double = 0.0
 )
 
 @Serializable
@@ -47,8 +51,23 @@ object MockDatabase {
     )
 
     val users = listOf(
-        User("user_123", "Иван", "Иванов", "101", "+380001112233", "ivan@mail.ru", -1250.0),
-        User("user_456", "Анна", "Петрова", "205", "+380004445566", "anna@mail.ru", 500.0)
+        User(
+            "user_123", "Иван", "Иванов", listOf(
+                Apartment(
+                    101, 3, "13 street", 250.0
+                ), Apartment(
+                    62, 1, "3 street", -100.0
+                )
+            ), "+380001112233", "ivan@mail.ru"
+        ), User(
+            "user_456", "Анна", "Петрова", listOf(
+                Apartment(
+                    55, 3, "55 street", -100.0
+                ), Apartment(
+                    18, 6, "100 street"
+                )
+            ), "+380004445566", "anna@mail.ru"
+        )
     )
 
     val outages = listOf(

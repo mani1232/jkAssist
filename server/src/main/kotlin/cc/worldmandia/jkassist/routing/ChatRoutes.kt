@@ -54,14 +54,6 @@ fun Routing.chatRoutes() {
         logger.info("🟢 Чат підключено: userId=$userId, session=$sessionUuid")
         val session = agent.createSession(sessionUuid)
 
-        if (ChatStateManager.getUiHistory(sessionUuid).isEmpty()) {
-            session.run(
-                """
-            [СИСТЕМНЕ ПОВІДОМЛЕННЯ] З'єднання встановлено. ID поточного співрозмовника: $userId. Збережи цей ID у контексті та ЗАВЖДИ використовуй його як аргумент `userId` для виклику інструментів. КАТЕГОРИЧНО ЗАБОРОНЕНО просити користувача назвати свій ID.
-            """.trimIndent()
-            )
-        }
-
         sendEvent(WsEvent.SessionCreated(sessionUuid))
 
         if (ChatStateManager.isWaitingForOperator(sessionUuid)) {
@@ -143,7 +135,8 @@ private suspend fun DefaultWebSocketServerSession.handleAiResponse(
     userId: String
 ) {
     try {
-        val botResponse = session.run(userText)
+        val enrichedText = "[SYSTEM context: поточний userId = $userId]\n$userText"
+        val botResponse = session.run(enrichedText)
 
         when {
             botResponse.contains("[TRANSFER_REQUESTED]") -> {
@@ -181,7 +174,7 @@ private suspend fun DefaultWebSocketServerSession.handleAiResponse(
                 sendEvent(WsEvent.SessionCreated(newSessionUuid))
                 sendEvent(resetMsg)
 
-                session.run("[СИСТЕМНЕ ПОВІДОМЛЕННЯ] Після очищення історії встановлено нове з'єднання. ID поточного співрозмовника: $userId. Збережи цей ID у контексті та ЗАВЖДИ використовуй його як аргумент `userId` для виклику інструментів. КАТЕГОРИЧНО ЗАБОРОНЕНО просити користувача назвати свій ID.")
+                session.run("[СИСТЕМНЕ ПОВІДОМЛЕННЯ] Після очищення історії встановлено нове з'єднання...")
             }
 
             else -> {
