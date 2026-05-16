@@ -85,7 +85,11 @@ class JkSupportTools(
         @LLMDescription("Детальний опис проблеми") description: String
     ): String {
         val user = infoService.findUser(userId) ?: return "Помилка: користувача не знайдено."
-        user.apartments.first { it.numberOfApartment == apartmentNumber }.let {
+        user.apartments.firstOrNull { it.numberOfApartment == apartmentNumber }.let {
+            if (it == null) {
+                return "Ви не є власником цієї квартири, ваші квартири ${jsonFormat.encodeToString(user.apartments)}"
+            }
+
             val ticket = crmService.registerEmergency(category, it, description, priority, false, userId)
             return "Заявка **${ticket.id}** успішно створена для квартири ${it}."
         }

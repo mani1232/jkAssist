@@ -238,7 +238,7 @@ fun ChatTopBar(
                 Spacer(modifier = Modifier.width(8.dp))
 
                 Text(
-                    text = if (isOperatorMode) "Чат із оператором" else "AI Home",
+                    text = if (isOperatorMode) "Чат із оператором" else "AIHome",
                     fontWeight = FontWeight.Bold
                 )
 
