@@ -63,9 +63,7 @@ class JkSupportTools(
 
         if (list.isEmpty()) return "Інформації про відключення$queryText немає."
 
-        return list.joinToString("\n") {
-            "${if (it.isEmergency) "🚨" else "📅"} ${it.type.uppercase()}: ${it.description}. Орієнтовний кінець: ${it.estimatedEndTime}"
-        }
+        return jsonFormat.encodeToString(list)
     }
 
     @LLMDescription("Отримати повну інформацію про профіль користувача за його ID.")
