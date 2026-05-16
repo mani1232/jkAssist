@@ -14,6 +14,7 @@ interface CrmService {
         category: TicketCategory,
         apartment: Apartment,
         description: String,
+        priority: String,
         urgent: Boolean,
         userId: String
     ): UserTicket
@@ -23,7 +24,7 @@ class CrmServiceImpl : CrmService {
     private val logger = LoggerFactory.getLogger(CrmServiceImpl::class.java)
 
     override suspend fun registerEmergency(
-        category: TicketCategory, apartment: Apartment, description: String, urgent: Boolean, userId: String
+        category: TicketCategory, apartment: Apartment, description: String, priority: String, urgent: Boolean, userId: String
     ): UserTicket = withContext(Dispatchers.IO) {
 
         UserTicket(
@@ -31,6 +32,7 @@ class CrmServiceImpl : CrmService {
             userId = userId,
             category = category,
             description = description,
+            priority = priority,
             status = "Очікування",
             date = Clock.System.now()
         ).also {

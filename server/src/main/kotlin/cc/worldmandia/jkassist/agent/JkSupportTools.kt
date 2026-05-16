@@ -83,11 +83,12 @@ class JkSupportTools(
         @LLMDescription("ЗАВЖДИ використовуй системний ID користувача, переданий тобі на початку діалогу.") userId: String,
         @LLMDescription("ApartmentNumber from can get from `getUserProfile`") apartmentNumber: Int,
         @LLMDescription("Категорія проблеми") category: TicketCategory,
+        @LLMDescription("Priority проблеми") priority: String,
         @LLMDescription("Детальний опис проблеми") description: String
     ): String {
         val user = infoService.findUser(userId) ?: return "Помилка: користувача не знайдено."
         user.apartments.first { it.number == apartmentNumber }.let {
-            val ticket = crmService.registerEmergency(category, it, description, false, userId)
+            val ticket = crmService.registerEmergency(category, it, description, priority, false, userId)
             return "Заявка **${ticket.id}** успішно створена для квартири ${it}."
         }
     }
