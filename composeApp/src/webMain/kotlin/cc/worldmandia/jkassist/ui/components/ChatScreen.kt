@@ -36,7 +36,6 @@ import cc.worldmandia.jkassist.WsEvent
 import cc.worldmandia.jkassist.viewmodels.ChatState
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownColor
-import com.mikepenz.markdown.model.rememberMarkdownState
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
@@ -136,10 +135,12 @@ fun ChatScreen(
 @Composable
 fun WelcomeInfo(onSuggestionClick: (String) -> Unit) {
     val suggestions = listOf(
-        "Викликати електрика",
-        "Передати показання лічильників",
-        "Питання щодо квитанції за місяць",
-        "Коли відключать гарячу воду?"
+        "Коли сьогодні вимикатимуть світло?",
+        "Чому немає гарячої води?",
+        "Викликати сантехніка: протікає труба",
+        "Який статус моєї останньої заявки?",
+        "З'єднати з живим оператором",
+        "Почати новий чат",
     )
 
     Column(
@@ -165,9 +166,17 @@ fun WelcomeInfo(onSuggestionClick: (String) -> Unit) {
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = """
-                Я — ваш штучний інтелект-диспетчер. 
-                Допоможу з питаннями щодо комунальних послуг, викликом майстрів,
-                оплатою рахунків та управлінням будинком.
+            Привіт! Я — ваш розумний AI для вашого дому.
+            
+            Я тут, щоб миттєво допомогти вам із такими питаннями:
+            • Графіки відключення світла та води
+            • Оформлення заявок на ремонт (електрик, сантехнік тощо)
+            • Отримання посилань на оплату рахунків
+            • Перевірка статусу ваших поточних звернень
+            • Відповіді на часті запитання (тарифи, послуги ЖЕКу)
+            
+            Якщо питання заскладне — я одразу покличу людину-оператора. 
+            Чим можу допомогти сьогодні?
             """.trimIndent(),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
