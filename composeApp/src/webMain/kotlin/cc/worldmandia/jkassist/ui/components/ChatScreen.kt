@@ -69,22 +69,6 @@ fun ChatScreen(
         }
     }
 
-    LaunchedEffect(messageList.size, state.isTyping) {
-        if (messageList.isNotEmpty()) {
-            val lastMsg = messageList.last()
-            val isFromUser = lastMsg.role == Role.USER
-
-            val visibleItems = listState.layoutInfo.visibleItemsInfo
-            val isAtBottom = visibleItems.isEmpty() ||
-                    (visibleItems.last().index >= listState.layoutInfo.totalItemsCount - 3)
-
-            if (isFromUser || isAtBottom) {
-                val targetIndex = maxOf(0, listState.layoutInfo.totalItemsCount - 1)
-                listState.animateScrollToItem(targetIndex)
-            }
-        }
-    }
-
     Scaffold(
         topBar = {
             ChatTopBar(
@@ -323,25 +307,9 @@ fun MessageList(
             .fillMaxSize()
             .padding(horizontal = 16.dp),
         state = listState,
+        reverseLayout = true,
         contentPadding = PaddingValues(vertical = 16.dp)
     ) {
-        items(items = messages, key = { it.id }) { msg ->
-            val visibleState = remember { MutableTransitionState(false).apply { targetState = true } }
-
-            AnimatedVisibility(
-                visibleState = visibleState,
-                modifier = Modifier.animateItem(),
-                enter = fadeIn(animationSpec = tween(300)) +
-                        slideInVertically(initialOffsetY = { it / 2 }, animationSpec = tween(300)) +
-                        expandVertically(animationSpec = tween(300))
-            ) {
-                Column {
-                    ChatBubble(msg)
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-            }
-        }
-
         item(key = "typing_indicator") {
             AnimatedVisibility(
                 visible = isTyping,
@@ -360,6 +328,23 @@ fun MessageList(
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         modifier = Modifier.padding(start = 6.dp, top = 4.dp, bottom = 4.dp)
                     )
+                }
+            }
+        }
+
+        items(items = messages.reversed(), key = { it.id }) { msg ->
+            val visibleState = remember { MutableTransitionState(false).apply { targetState = true } }
+
+            AnimatedVisibility(
+                visibleState = visibleState,
+                modifier = Modifier.animateItem(),
+                enter = fadeIn(animationSpec = tween(300)) +
+                        slideInVertically(initialOffsetY = { it / 2 }, animationSpec = tween(300)) +
+                        expandVertically(animationSpec = tween(300))
+            ) {
+                Column {
+                    ChatBubble(msg)
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
         }
