@@ -331,10 +331,9 @@ fun MessageList(
             AnimatedVisibility(
                 visibleState = visibleState,
                 modifier = Modifier.animateItem(),
-                enter = fadeIn(animationSpec = tween(300)) + slideInVertically(
-                    initialOffsetY = { it / 2 },
-                    animationSpec = tween(300)
-                )
+                enter = fadeIn(animationSpec = tween(300)) +
+                        slideInVertically(initialOffsetY = { it / 2 }, animationSpec = tween(300)) +
+                        expandVertically(animationSpec = tween(300))
             ) {
                 Column {
                     ChatBubble(msg)
@@ -343,12 +342,12 @@ fun MessageList(
             }
         }
 
-        item {
+        item(key = "typing_indicator") {
             AnimatedVisibility(
                 visible = isTyping,
                 modifier = Modifier.animateItem(),
-                enter = fadeIn() + slideInVertically { it / 2 },
-                exit = fadeOut() + slideOutVertically { it / 2 }
+                enter = fadeIn() + slideInVertically { it / 2 } + expandVertically(),
+                exit = fadeOut() + slideOutVertically { it / 2 } + shrinkVertically()
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(

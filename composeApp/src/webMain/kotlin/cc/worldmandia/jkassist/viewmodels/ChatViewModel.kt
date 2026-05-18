@@ -52,7 +52,7 @@ class ChatViewModel(
                     )
                 } catch (e: CancellationException) {
                     throw e
-                } catch (e: Throwable) {
+                } catch (_: Throwable) {
                     networkClient.disconnect()
                     _state.update {
                         it.copy(
@@ -101,7 +101,8 @@ class ChatViewModel(
                     val isEndMessage = event.role == Role.SYSTEM && event.text.contains("Оператор завершив діалог")
                     currentState.copy(
                         messages = currentState.messages + (event.id to event),
-                        isOperatorMode = !isEndMessage && currentState.isOperatorMode
+                        isOperatorMode = !isEndMessage && currentState.isOperatorMode,
+                        isTyping = false
                     )
                 }
             }
