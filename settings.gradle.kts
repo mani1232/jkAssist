@@ -4,6 +4,7 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 pluginManagement {
     repositories {
         maven("https://redirector.kotlinlang.org/maven/compose-dev")
+        maven("https://packages.jetbrains.team/maven/p/grazi/grazie-platform-public")
         google {
             mavenContent {
                 includeGroupAndSubgroups("androidx")
@@ -19,11 +20,12 @@ pluginManagement {
 dependencyResolutionManagement {
     versionCatalogs {
         create("ktorLibs") {
-            from("io.ktor:ktor-version-catalog:3.4.3")
+            from("io.ktor:ktor-version-catalog:3.5.0")
         }
     }
     repositories {
         maven("https://redirector.kotlinlang.org/maven/compose-dev")
+        maven("https://packages.jetbrains.team/maven/p/grazi/grazie-platform-public")
         google {
             mavenContent {
                 includeGroupAndSubgroups("androidx")

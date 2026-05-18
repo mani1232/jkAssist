@@ -1,64 +1,47 @@
-This is a Kotlin Multiplatform project targeting Web, Server.
+# AIHome
 
-* [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications. It
-  contains several subfolders:
-    - [commonMain](./composeApp/src/commonMain/kotlin) is for code that’s common for all targets.
-    - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name. For
-      example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-      the [iosMain](./composeApp/src/iosMain/kotlin) folder would be the right place for such calls. Similarly, if you
-      want to edit the Desktop (JVM) specific part, the [jvmMain](./composeApp/src/jvmMain/kotlin)
-      folder is the appropriate location.
+**AIHome** — це розумний ШІ-асистент (чат-бот) для мешканців житлових комплексів (ЖК), створений на базі Kotlin Multiplatform. Проєкт складається з вебклієнта на Compose Multiplatform (Wasm) та сервера на Ktor, який використовує Google Gemini для обробки природної мови та маршрутизації запитів.
 
-* [/server](./server/src/main/kotlin) is for the Ktor server application.
+## ✨ Ключові можливості
 
-* [/shared](./shared/src) is for the code that will be shared between all targets in the project. The most important
-  subfolder is [commonMain](./shared/src/commonMain/kotlin). If preferred, you can add code to the platform-specific
-  folders here too.
+* **Розумний чат-бот**: Обробка запитів мешканців (перевірка відключень світла/води, створення заявок на ремонт).
+* **Інтеграція зі ШІ**: Використання бібліотеки `koog-agents` та моделей Google Gemini для інтелектуального діалогу зі збереженням контексту (пам'ять сесій).
+* **Переведення на оператора**: Якщо ШІ не може розв'язати проблему (або в екстрених ситуаціях), чат безшовно переводиться на живого оператора.
+* **Консоль оператора**: Вбудована CLI-консоль на сервері для спілкування з користувачами, які очікують відповіді живої людини. (тимчасово)
+* **WebAssembly (Wasm) Frontend**: Сучасний, швидкий та чуйний інтерфейс, написаний на Compose Multiplatform.
+* **Real-time взаємодія**: Зв'язок між клієнтом та сервером працює через WebSockets.
 
-### Build and Run Server
+## 🛠 Стек технологій
 
-To build and run the development version of the server, use the run configuration from the run widget in your IDE’s
-toolbar or run it directly from the terminal:
+* **Мова**: Kotlin
+* **Архітектура**: Kotlin Multiplatform (Web, Server, Shared)
+* **Frontend**: Compose Multiplatform (Wasm target), Material 3
+* **Backend**: Ktor (WebSockets, Content Negotiation, CORS)
+* **AI / Агенти**: Koog Agents + Google Gemini Models
+* **Серіалізація**: `kotlinx-serialization-json`
+* **Дата/Час**: `kotlinx-datetime`
 
-- on macOS/Linux
-  ```shell
-  ./gradlew :server:run
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :server:run
-  ```
+## 📂 Структура проєкту
 
-### Build and Run Web Application
+* **`/composeApp`**: Клієнтська частина. Містить UI чату та мережевий клієнт для WebSocket. Збирається у Wasm-застосунок для браузера.
+* **`/server`**: Серверна частина (Ktor).
+    * Керування ШІ-агентом та системними промптами.
+    * Керування сесіями та історією (збереження у файлову систему).
+    * Інструменти агента: отримання профілю, перевірка відключень, створення заявок.
+    * Мок-база даних.
+    * Консоль оператора.
+* **`/shared`**: Спільний код для клієнта та сервера (моделі DTO, події WebSockets).
 
-To build and run the development version of the web app, use the run configuration from the run widget in your IDE's
-toolbar or run it directly from the terminal:
+## 🚀 Запуск проєкту
 
-- for the Wasm target (faster, modern browsers):
-    - on macOS/Linux
-      ```shell
-      ./gradlew :composeApp:wasmJsBrowserDevelopmentRun
-      ```
-    - on Windows
-      ```shell
-      .\gradlew.bat :composeApp:wasmJsBrowserDevelopmentRun
-      ```
-- for the JS target (slower, supports older browsers):
-    - on macOS/Linux
-      ```shell
-      ./gradlew :composeApp:jsBrowserDevelopmentRun
-      ```
-    - on Windows
-      ```shell
-      .\gradlew.bat :composeApp:jsBrowserDevelopmentRun
-      ```
+### Попередні вимоги
+* **JDK 26** (відповідно до налаштувань проєкту).
+* Отриманий API-ключ для Google Gemini (`GEMINI_API_KEY`).
 
----
+### Запуск сервера
+Для роботи ШІ-агента необхідно задати змінну середовища `GEMINI_API_KEY`.
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html),
-[Compose Multiplatform](https://github.com/JetBrains/compose-multiplatform/#compose-multiplatform),
-[Kotlin/Wasm](https://kotl.in/wasm/)…
-
-We would appreciate your feedback on Compose/Web and Kotlin/Wasm in the public Slack
-channel [#compose-web](https://slack-chats.kotlinlang.org/c/compose-web). If you face any issues, please report them
-on [YouTrack](https://youtrack.jetbrains.com/newIssue?project=CMP).
+**Linux / macOS:**
+```bash
+export GEMINI_API_KEY="ваш-ключ-тут"
+./gradlew :server:run
