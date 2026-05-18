@@ -1,7 +1,5 @@
 package cc.worldmandia.jkassist.routing
 
-import ai.koog.agents.core.agent.context.AIAgentContext
-import ai.koog.agents.core.agent.session.AIAgentRunSession
 import cc.worldmandia.jkassist.Role
 import cc.worldmandia.jkassist.WsEvent
 import cc.worldmandia.jkassist.agent.ChatStateManager
@@ -17,6 +15,7 @@ import io.ktor.server.websocket.*
 import io.ktor.utils.io.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
@@ -57,11 +56,45 @@ fun Routing.chatRoutes() {
         logger.info("🟢 Чат підключено: userId=$userId, session=$sessionUuid")
         val session = agent.createSession(sessionUuid)
 
+        var operatorListenerJob: Job? = null
+
+        fun startOperatorListener() {
+            operatorListenerJob?.cancel()
+            operatorListenerJob = launch(Dispatchers.IO) {
+                val channel = ChatStateManager.getOperatorChannel(sessionUuid)
+
+                for (operatorText in channel) {
+                    if (operatorText.trim().lowercase() == "end") {
+                        ChatStateManager.removeWaitingStatus(sessionUuid)
+                        val endMsg = WsEvent.Message(
+                            id = "sys-${Uuid.generateV7().toHexDashString()}",
+                            role = Role.SYSTEM,
+                            text = "*(Системне повідомлення)* Оператор завершив діалог. Бот знову з вами.",
+                            timestampMs = Clock.System.now()
+                        )
+                        sendEvent(endMsg)
+                        break
+                    }
+
+                    if (operatorText.isNotBlank()) {
+                        val opMsg = WsEvent.Message(
+                            id = "op-${Uuid.generateV7().toHexDashString()}",
+                            role = Role.SYSTEM,
+                            text = operatorText,
+                            timestampMs = Clock.System.now()
+                        )
+                        ChatStateManager.saveUiMessage(sessionUuid, opMsg)
+                        sendEvent(opMsg)
+                    }
+                }
+            }
+        }
+
         sendEvent(WsEvent.SessionCreated(sessionUuid))
 
         if (ChatStateManager.isWaitingForOperator(sessionUuid)) {
             sendEvent(WsEvent.TransferToSupport)
-            listenToOperator(sessionUuid)
+            startOperatorListener()
         }
 
         try {
@@ -69,6 +102,22 @@ fun Routing.chatRoutes() {
                 if (frame !is Frame.Text) continue
                 val userText = frame.readText().trim()
                 if (userText.isBlank()) continue
+
+                if (userText == "/cancel_operator" && ChatStateManager.isWaitingForOperator(sessionUuid)) {
+                    ChatStateManager.removeWaitingStatus(sessionUuid)
+
+                    val cancelMsg = WsEvent.Message(
+                        id = "sys-${Uuid.generateV7().toHexDashString()}",
+                        role = Role.SYSTEM,
+                        text = "*(Системне повідомлення)* Оператор завершив діалог (виклик скасовано). Бот знову з вами.",
+                        timestampMs = Clock.System.now()
+                    )
+                    ChatStateManager.saveUiMessage(sessionUuid, cancelMsg)
+                    sendEvent(cancelMsg)
+
+                    println("\n👨‍💻 [ОПЕРАТОР] Користувач $sessionUuid скасував виклик.")
+                    continue
+                }
 
                 val userMsg = WsEvent.Message(
                     id = Uuid.generateV7().toHexDashString(),
@@ -80,128 +129,74 @@ fun Routing.chatRoutes() {
                 sendEvent(userMsg)
 
                 if (ChatStateManager.isWaitingForOperator(sessionUuid)) {
-                    handleOperatorSimulation(userText)
+                    println("\n💬 [КОРИСТУВАЧ $sessionUuid]: $userText")
                     continue
                 }
 
                 sendEvent(WsEvent.TypingStarted)
-                handleAiResponse(session, sessionUuid, userText, userId)
+
+                val enrichedText = "[SYSTEM context: поточний userId = $userId]\n$userText"
+                val botResponse = session.run(enrichedText)
+
+                when {
+                    botResponse.contains("[TRANSFER_REQUESTED]") -> {
+                        val reason = botResponse.substringAfter("[TRANSFER_REQUESTED]").trim()
+                        ChatStateManager.markWaitingForOperator(sessionUuid, Clock.System.now())
+
+                        val transferMsg = WsEvent.Message(
+                            id = "bot-${Uuid.generateV7().toHexDashString()}",
+                            role = Role.BOT,
+                            text = "Переключаю вас на фахівця. Будь ласка, зачекайте...",
+                            timestampMs = Clock.System.now()
+                        )
+                        ChatStateManager.saveUiMessage(sessionUuid, transferMsg)
+                        sendEvent(transferMsg)
+                        sendEvent(WsEvent.TransferToSupport)
+
+                        println("\n👨‍💻 [ОПЕРАТОР] Новий запит! Сесія: $sessionUuid | Причина: $reason")
+                        startOperatorListener()
+                    }
+
+                    botResponse.contains("[RESET_REQUESTED]") -> {
+                        ChatStateManager.clearSession(sessionUuid)
+                        val newSessionUuid = Uuid.generateV7().toHexDashString()
+
+                        val resetMsg = WsEvent.Message(
+                            id = "sys-${Uuid.generateV7().toHexDashString()}",
+                            role = Role.SYSTEM,
+                            text = "*(Системне повідомлення)* Сесія оновлена. Історія очищена.",
+                            timestampMs = Clock.System.now()
+                        )
+                        ChatStateManager.saveUiMessage(newSessionUuid, resetMsg)
+
+                        sendEvent(WsEvent.SessionCreated(newSessionUuid))
+                        sendEvent(resetMsg)
+
+                        return@webSocket
+                    }
+
+                    else -> {
+                        val responseText = botResponse.ifBlank {
+                            "Вибачте, сталася затримка при обробці запиту або я не зміг згенерувати відповідь. Будь ласка, перефразуйте питання."
+                        }
+
+                        val normalMsg = WsEvent.Message(
+                            id = "bot-${Uuid.generateV7().toHexDashString()}",
+                            role = Role.BOT,
+                            text = responseText,
+                            timestampMs = Clock.System.now()
+                        )
+                        ChatStateManager.saveUiMessage(sessionUuid, normalMsg)
+                        sendEvent(normalMsg)
+                    }
+                }
                 sendEvent(WsEvent.TypingStopped)
             }
         } catch (e: Exception) {
             handleDisconnect(e, userId, sessionUuid)
+        } finally {
+            operatorListenerJob?.cancel()
         }
-    }
-}
-
-@OptIn(ExperimentalUuidApi::class)
-private fun DefaultWebSocketServerSession.listenToOperator(sessionUuid: String) {
-    launch(Dispatchers.IO) {
-        val channel = ChatStateManager.getOperatorChannel(sessionUuid)
-
-        for (operatorText in channel) {
-            if (operatorText.trim().lowercase() == "end") {
-                ChatStateManager.removeWaitingStatus(sessionUuid)
-                val endMsg = WsEvent.Message(
-                    id = "sys-${Uuid.generateV7().toHexDashString()}",
-                    role = Role.SYSTEM,
-                    text = "*(Системне повідомлення)* Оператор завершив діалог. Бот знову з вами.",
-                    timestampMs = Clock.System.now()
-                )
-                sendEvent(endMsg)
-                break
-            }
-
-            if (operatorText.isNotBlank()) {
-                val opMsg = WsEvent.Message(
-                    id = "op-${Uuid.generateV7().toHexDashString()}",
-                    role = Role.SYSTEM,
-                    text = operatorText,
-                    timestampMs = Clock.System.now()
-                )
-                ChatStateManager.saveUiMessage(sessionUuid, opMsg)
-                sendEvent(opMsg)
-            }
-        }
-    }
-}
-
-private fun DefaultWebSocketServerSession.handleOperatorSimulation(userText: String) {
-    logger.warn("👤 [КОРИСТУВАЧ]: $userText")
-}
-
-@OptIn(ExperimentalUuidApi::class)
-private suspend fun DefaultWebSocketServerSession.handleAiResponse(
-    session: AIAgentRunSession<String, String, out AIAgentContext>,
-    sessionUuid: String,
-    userText: String,
-    userId: String
-) {
-    try {
-        val enrichedText = "[SYSTEM context: поточний userId = $userId]\n$userText"
-        val botResponse = session.run(enrichedText)
-
-        when {
-            botResponse.contains("[TRANSFER_REQUESTED]") -> {
-                val reason = botResponse.substringAfter("[TRANSFER_REQUESTED]").trim()
-                ChatStateManager.markWaitingForOperator(sessionUuid, Clock.System.now())
-
-                val transferMsg = WsEvent.Message(
-                    id = "bot-${Uuid.generateV7().toHexDashString()}",
-                    role = Role.BOT,
-                    text = "Переключаю вас на фахівця. Будь ласка, зачекайте...",
-                    timestampMs = Clock.System.now()
-                )
-                ChatStateManager.saveUiMessage(sessionUuid, transferMsg)
-                sendEvent(transferMsg)
-                sendEvent(WsEvent.TransferToSupport)
-
-                println("\n👨‍💻 [ОПЕРАТОР] Новий запит! Сесія: $sessionUuid | Причина: $reason")
-                listenToOperator(sessionUuid)
-            }
-
-            botResponse.contains("[RESET_REQUESTED]") -> {
-                ChatStateManager.clearSession(sessionUuid)
-
-                val newSessionUuid = Uuid.generateV7().toHexDashString()
-
-                val resetMsg = WsEvent.Message(
-                    id = "sys-${Uuid.generateV7().toHexDashString()}",
-                    role = Role.SYSTEM,
-                    text = "*(Системне повідомлення)* Сесія оновлена. Історія очищена.",
-                    timestampMs = Clock.System.now()
-                )
-
-                ChatStateManager.saveUiMessage(newSessionUuid, resetMsg)
-
-                sendEvent(WsEvent.SessionCreated(newSessionUuid))
-                sendEvent(resetMsg)
-
-                session.run("[СИСТЕМНЕ ПОВІДОМЛЕННЯ] Після очищення історії встановлено нове з'єднання...")
-            }
-
-            else -> {
-                val responseText = if (botResponse.isNotBlank()) {
-                    botResponse
-                } else {
-                    "Вибачте, сталася затримка при обробці запиту або я не зміг згенерувати відповідь. Будь ласка, перефразуйте питання."
-                }
-
-                val normalMsg = WsEvent.Message(
-                    id = "bot-${Uuid.generateV7().toHexDashString()}",
-                    role = Role.BOT,
-                    text = responseText,
-                    timestampMs = Clock.System.now()
-                )
-                ChatStateManager.saveUiMessage(sessionUuid, normalMsg)
-                sendEvent(normalMsg)
-            }
-        }
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        logger.error("🔴 Ошибка LLM: ${e.message}", e)
-        sendEvent(WsEvent.Error("Внутрішня помилка. Спробуйте ще раз."))
     }
 }
 

@@ -19,6 +19,6 @@ fun App() = MaterialExpressiveTheme(if (isSystemInDarkTheme()) darkColorScheme()
 
     ChatScreen(
         state = state, onSendMessage = viewModel::sendMessage, onReconnect = viewModel::connect,
-        onToggleWelcome = viewModel::setShowWelcome
+        onToggleWelcome = viewModel::setShowWelcome, onCancelOperator = { viewModel.sendMessage("/cancel_operator") }
     )
 }

@@ -50,7 +50,8 @@ fun ChatScreen(
     state: ChatState,
     onSendMessage: (String) -> Unit,
     onReconnect: () -> Unit,
-    onToggleWelcome: (Boolean) -> Unit
+    onToggleWelcome: (Boolean) -> Unit,
+    onCancelOperator: () -> Unit
 ) {
     val listState = rememberLazyListState()
 
@@ -92,7 +93,8 @@ fun ChatScreen(
                 isConnected = state.isConnected,
                 isShowingWelcome = state.isShowingWelcome,
                 onReconnect = onReconnect,
-                onToggleWelcome = onToggleWelcome
+                onToggleWelcome = onToggleWelcome,
+                onCancelOperator = onCancelOperator
             )
         }
     ) { paddingValues ->
@@ -230,7 +232,8 @@ fun ChatTopBar(
     isConnected: Boolean,
     isShowingWelcome: Boolean,
     onReconnect: () -> Unit,
-    onToggleWelcome: (Boolean) -> Unit
+    onToggleWelcome: (Boolean) -> Unit,
+    onCancelOperator: () -> Unit
 ) {
     TopAppBar(
         title = {
@@ -288,8 +291,13 @@ fun ChatTopBar(
                 }
 
                 isOperatorMode -> {
-                    Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-                        Icon(imageVector = Icons.Outlined.Face, contentDescription = "Оператор")
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = onCancelOperator) {
+                            Text("Скасувати", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                        }
+                        Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                            Icon(imageVector = Icons.Outlined.Face, contentDescription = "Оператор")
+                        }
                     }
                 }
             }
