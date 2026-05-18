@@ -10,12 +10,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Warning
@@ -76,7 +78,8 @@ fun ChatScreen(
                     (visibleItems.last().index >= listState.layoutInfo.totalItemsCount - 3)
 
             if (isFromUser || isAtBottom) {
-                listState.animateScrollToItem(listState.layoutInfo.totalItemsCount)
+                val targetIndex = maxOf(0, listState.layoutInfo.totalItemsCount - 1)
+                listState.animateScrollToItem(targetIndex)
             }
         }
     }
@@ -146,7 +149,8 @@ fun WelcomeInfo(onSuggestionClick: (String) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(24.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
