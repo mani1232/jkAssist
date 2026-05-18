@@ -58,10 +58,12 @@ object ChatStateManager {
                                     content = msg.text,
                                     metaInfo = RequestMetaInfo(timestamp = msg.timestampMs)
                                 )
+
                                 Role.BOT -> Message.Assistant(
                                     content = msg.text,
                                     metaInfo = ResponseMetaInfo(timestamp = msg.timestampMs)
                                 )
+
                                 Role.SYSTEM -> Message.System(
                                     content = msg.text,
                                     metaInfo = RequestMetaInfo(timestamp = msg.timestampMs)

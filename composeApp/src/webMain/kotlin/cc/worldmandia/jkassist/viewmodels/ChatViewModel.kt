@@ -79,7 +79,8 @@ class ChatViewModel(
 
                 val messagesList = mergedMessages.values.toList()
                 val lastTransfer = messagesList.indexOfLast { it.text.contains("Переключаю вас на фахівця") }
-                val lastEnd = messagesList.indexOfLast { it.role == Role.SYSTEM && it.text.contains("Оператор завершив діалог") }
+                val lastEnd =
+                    messagesList.indexOfLast { it.role == Role.SYSTEM && it.text.contains("Оператор завершив діалог") }
                 val isOperatorActive = lastTransfer > lastEnd
 
                 currentState.copy(

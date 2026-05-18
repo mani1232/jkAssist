@@ -24,7 +24,12 @@ class CrmServiceImpl : CrmService {
     private val logger = LoggerFactory.getLogger(CrmServiceImpl::class.java)
 
     override suspend fun registerEmergency(
-        category: TicketCategory, apartment: Apartment, description: String, priority: String, urgent: Boolean, userId: String
+        category: TicketCategory,
+        apartment: Apartment,
+        description: String,
+        priority: String,
+        urgent: Boolean,
+        userId: String
     ): UserTicket = withContext(Dispatchers.IO) {
 
         UserTicket(

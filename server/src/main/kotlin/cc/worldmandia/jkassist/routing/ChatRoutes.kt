@@ -18,6 +18,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.launch
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.slf4j.LoggerFactory
 import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
@@ -135,8 +137,14 @@ fun Routing.chatRoutes() {
 
                 sendEvent(WsEvent.TypingStarted)
 
-                val enrichedText = "[SYSTEM context: поточний userId = $userId]\n$userText"
-                val botResponse = session.run(enrichedText)
+                val currentTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+                val enrichedText = "[SYSTEM context: поточний userId = $userId, поточний час = $currentTime]\n$userText"
+                val botResponse = try {
+                    session.run(enrichedText)
+                } catch (e: Exception) {
+                    logger.error("Помилка AI: ${e.message}")
+                    "Вибачте, сталася технічна помилка при зверненні до ШІ. Спробуйте ще раз."
+                }
 
                 when {
                     botResponse.contains("[TRANSFER_REQUESTED]") -> {
