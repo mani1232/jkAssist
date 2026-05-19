@@ -5,11 +5,16 @@ module.exports = {
     ],
     globIgnores: [
         "serviceWorker.js",
-        "registerServiceWorker.js"
+        "registerServiceWorker.js",
+        "push-worker.js"
     ],
     maximumFileSizeToCacheInBytes: 25 * 1024 * 1024,
     swDest: "build/dist/wasmJs/productionExecutable/serviceWorker.js",
     ignoreURLParametersMatching: [/^v/],
+
+    importScripts: [
+        'push-worker.js'
+    ],
 
     runtimeCaching: [
         {

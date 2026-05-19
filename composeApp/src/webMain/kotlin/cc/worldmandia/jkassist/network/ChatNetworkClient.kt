@@ -93,4 +93,16 @@ class ChatNetworkClient(
         webSocketSession?.cancel()
         webSocketSession = null
     }
+
+    suspend fun sendPushToken(subscriptionJson: String) {
+        try {
+            httpClient.post("$API_URL/api/notifications/subscribe") {
+                parameter("userId", USER_TOKEN)
+                contentType(ContentType.Application.Json)
+                setBody(subscriptionJson)
+            }
+        } catch (e: Exception) {
+            println("Не вдалося відправити push-токен: ${e.message}")
+        }
+    }
 }

@@ -53,3 +53,32 @@
         window.dispatchEvent(new Event("app-installed-success"));
     });
 })();
+
+window.subscribeToPush = async function(publicKeyBase64) {
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        let subscription = await registration.pushManager.getSubscription();
+
+        if (!subscription) {
+            const padding = '='.repeat((4 - publicKeyBase64.length % 4) % 4);
+            const base64 = (publicKeyBase64 + padding).replace(/\-/g, '+').replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+
+            subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: outputArray
+            });
+        }
+
+        window.dispatchEvent(new CustomEvent('push-subscription', {
+            detail: JSON.stringify(subscription)
+        }));
+
+    } catch (e) {
+        console.error("Помилка підписки на Push: ", e);
+    }
+};

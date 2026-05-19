@@ -39,6 +39,8 @@ kotlin {
             implementation(ktorLibs.serialization.kotlinx.json)
             implementation(ktorLibs.client.json)
 
+            implementation(kotlinWrappers.browser)
+
             implementation(projects.shared)
         }
         commonTest.dependencies {

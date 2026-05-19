@@ -1,6 +1,4 @@
-import io.ktor.plugin.features.DockerImageRegistry
-import io.ktor.plugin.features.DockerPortMapping
-import io.ktor.plugin.features.DockerPortMappingProtocol
+import io.ktor.plugin.features.*
 
 plugins {
     alias(libs.plugins.kotlinJvm)
@@ -22,6 +20,7 @@ application {
 dependencies {
     implementation(projects.shared)
     implementation(libs.logback)
+    implementation(libs.webpush)
 
     //implementation(libs.koin.core)
     //implementation(libs.koin.ktor)

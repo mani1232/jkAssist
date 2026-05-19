@@ -3,6 +3,9 @@ package cc.worldmandia.jkassist
 import kotlin.time.Instant
 
 object MockDatabase {
+
+    val pushSubscriptions = mutableMapOf<String, String>()
+
     val tickets = mutableListOf(
         UserTicket(
             id = "REQ-1001",

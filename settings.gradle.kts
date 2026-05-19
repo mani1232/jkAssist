@@ -18,12 +18,8 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
-    versionCatalogs {
-        create("ktorLibs") {
-            from("io.ktor:ktor-version-catalog:3.5.0")
-        }
-    }
     repositories {
+        mavenCentral()
         maven("https://redirector.kotlinlang.org/maven/compose-dev")
         maven("https://packages.jetbrains.team/maven/p/grazi/grazie-platform-public")
         google {
@@ -33,7 +29,16 @@ dependencyResolutionManagement {
                 includeGroupAndSubgroups("com.google")
             }
         }
-        mavenCentral()
+    }
+    versionCatalogs {
+        create("ktorLibs") {
+            val ktorVersion = "3.5.0"
+            from("io.ktor:ktor-version-catalog:$ktorVersion")
+        }
+        create("kotlinWrappers") {
+            val wrappersVersion = "2026.5.5"
+            from("org.jetbrains.kotlin-wrappers:kotlin-wrappers-catalog:$wrappersVersion")
+        }
     }
 }
 

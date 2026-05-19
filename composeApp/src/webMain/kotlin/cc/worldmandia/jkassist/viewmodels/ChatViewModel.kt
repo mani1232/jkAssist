@@ -21,7 +21,7 @@ data class ChatState(
 )
 
 class ChatViewModel(
-    private val scope: CoroutineScope, private val networkClient: ChatNetworkClient
+    private val scope: CoroutineScope, val networkClient: ChatNetworkClient
 ) {
     private val _state = MutableStateFlow(ChatState())
     val state = _state.asStateFlow()

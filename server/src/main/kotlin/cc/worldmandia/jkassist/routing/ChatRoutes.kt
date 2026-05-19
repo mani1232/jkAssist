@@ -1,5 +1,6 @@
 package cc.worldmandia.jkassist.routing
 
+import cc.worldmandia.jkassist.MockDatabase
 import cc.worldmandia.jkassist.Role
 import cc.worldmandia.jkassist.WsEvent
 import cc.worldmandia.jkassist.agent.ChatStateManager
@@ -7,8 +8,10 @@ import cc.worldmandia.jkassist.agent.JkAgentFactory
 import cc.worldmandia.jkassist.jsonFormat
 import cc.worldmandia.jkassist.service.CrmServiceImpl
 import cc.worldmandia.jkassist.service.InfoService
+import cc.worldmandia.jkassist.service.JkWebPushService
 import cc.worldmandia.jkassist.service.OperatorConsole
 import io.ktor.http.*
+import io.ktor.server.request.receiveText
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
@@ -38,6 +41,19 @@ fun Routing.chatRoutes() {
     )
 
     OperatorConsole.start()
+
+    post("/api/notifications/subscribe") {
+        val userId = call.request.queryParameters["userId"]
+            ?: return@post call.respond(HttpStatusCode.BadRequest, "Missing userId")
+
+        val subscriptionJson = call.receiveText()
+
+        MockDatabase.pushSubscriptions[userId] = subscriptionJson
+        logger.info("🔑 Push-токен збережено для $userId")
+
+        println("Отримано Push-токен для $userId: $subscriptionJson")
+        call.respond(HttpStatusCode.OK)
+    }
 
     get("/api/chat/{sessionId}/history") {
         val sessionId = call.parameters["sessionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
@@ -87,6 +103,14 @@ fun Routing.chatRoutes() {
                         )
                         ChatStateManager.saveUiMessage(sessionUuid, opMsg)
                         sendEvent(opMsg)
+
+                        launch {
+                            JkWebPushService.sendPushNotification(
+                                userId = userId,
+                                title = "Оператор AIHome",
+                                body = operatorText
+                            )
+                        }
                     }
                 }
             }
@@ -196,6 +220,14 @@ fun Routing.chatRoutes() {
                         )
                         ChatStateManager.saveUiMessage(sessionUuid, normalMsg)
                         sendEvent(normalMsg)
+
+                        launch {
+                            JkWebPushService.sendPushNotification(
+                                userId = userId,
+                                title = "AIHome Асистент",
+                                body = responseText.take(100) + if (responseText.length > 100) "..." else ""
+                            )
+                        }
                     }
                 }
                 sendEvent(WsEvent.TypingStopped)
