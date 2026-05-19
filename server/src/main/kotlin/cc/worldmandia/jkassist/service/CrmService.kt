@@ -18,6 +18,8 @@ interface CrmService {
         urgent: Boolean,
         userId: String
     ): UserTicket
+
+    suspend fun cancelTicket(ticketId: String): Boolean
 }
 
 class CrmServiceImpl : CrmService {
@@ -45,4 +47,17 @@ class CrmServiceImpl : CrmService {
             logger.info("🎟️ Заявка створена: $it | Категорія: $category | Квартира: $apartment | Терміново: $urgent")
         }
     }
+
+    override suspend fun cancelTicket(ticketId: String): Boolean = withContext(Dispatchers.IO) {
+        val index = MockDatabase.tickets.indexOfFirst { it.id == ticketId }
+        if (index != -1) {
+            val ticket = MockDatabase.tickets[index]
+
+            MockDatabase.tickets[index] = ticket.copy(status = "Скасовано")
+            logger.info("🚫 Заявка скасована: $ticketId")
+            return@withContext true
+        }
+        return@withContext false
+    }
+
 }

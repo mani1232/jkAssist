@@ -114,4 +114,29 @@ class JkSupportTools(
     fun requestOperator(
         @LLMDescription("Коротка причина переводу для оператора") reason: String
     ): String = "[TRANSFER_REQUESTED] Причина: $reason"
+
+    @LLMDescription("Скасувати існуючу заявку користувача. УВАГА: Можна скасувати лише ті заявки, які знаходяться в статусі 'Очікування'.")
+    @Tool
+    suspend fun cancelTicket(
+        @LLMDescription("Поточний userId з системного контексту.") userId: String,
+        @LLMDescription("ID заявки (формат REQ-XXXX), яку потрібно скасувати.") ticketId: String
+    ): String {
+        val ticket = infoService.getTicketById(ticketId)
+
+        if (ticket == null || ticket.userId != userId) {
+            return "Помилка: Заявку $ticketId не знайдено, або вона не належить поточному користувачу."
+        }
+
+        if (ticket.status.lowercase() != "очікування") {
+            return "Відмова: Заявку $ticketId не можна скасувати, оскільки її статус вже '${ticket.status}'. Можливо, майстер вже виїхав. Порадьте користувачу зателефонувати диспетчеру або переведіть на оператора."
+        }
+
+        val isCanceled = crmService.cancelTicket(ticketId)
+
+        return if (isCanceled) {
+            "Успіх: Заявку $ticketId було успішно скасовано."
+        } else {
+            "Помилка: Не вдалося скасувати заявку через внутрішню помилку."
+        }
+    }
 }

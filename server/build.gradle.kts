@@ -30,12 +30,15 @@ dependencies {
     implementation(libs.kotlin.io)
     implementation(libs.kotlin.datetime)
 
-    implementation(libs.kotlin.koog)
-    implementation(libs.kotlin.koog.memory)
-    implementation(libs.kotlin.koog.ktor)
-    implementation(libs.kotlin.koog.ext)
-    implementation(libs.kotlin.koog.longterm)
-    implementation(libs.kotlin.koog.tools)
+    implementation(libs.koog.agents.core)
+    implementation(libs.koog.agents.tools)
+
+    implementation(libs.koog.ktor)
+
+    implementation(libs.koog.features.memory)
+    implementation(libs.koog.features.longterm.memory)
+
+    implementation(libs.koog.llms.all)
 
     implementation(ktorLibs.server.core)
     implementation(ktorLibs.server.websockets)
