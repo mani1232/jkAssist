@@ -1,8 +1,8 @@
 {
-    "name": "Compose Multiplatform PWA",
-    "short_name": "Compose PWA",
-    "theme_color": "#FFFBFE",
-    "background_color": "#FFFBFE",
+    "name": "AIHome - modern ai-based chat for your home",
+    "short_name": "AIHome",
+    "theme_color": "#4F378B",
+    "background_color": "#141218",
     "display": "standalone",
     "scope": "./",
     "start_url": "./",
