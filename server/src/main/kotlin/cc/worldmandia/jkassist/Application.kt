@@ -40,7 +40,7 @@ private fun Application.installPlugins() {
         allowMethod(HttpMethod.Post)
         allowHeader(HttpHeaders.Authorization)
         allowHeader(HttpHeaders.ContentType)
-        anyHost()
+        allowHost("worldmandia.cc", subDomains = listOf("hack", "ai"), schemes = listOf("http", "https"))
     }
 
     install(WebSockets) {

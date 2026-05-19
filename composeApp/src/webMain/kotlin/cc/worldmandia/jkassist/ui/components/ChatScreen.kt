@@ -20,6 +20,7 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -38,6 +39,7 @@ import cc.worldmandia.jkassist.WsEvent
 import cc.worldmandia.jkassist.viewmodels.ChatState
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownColor
+import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
@@ -54,9 +56,20 @@ fun ChatScreen(
     onCancelOperator: () -> Unit
 ) {
     val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
 
     val messageList = remember(state.messages) {
         state.messages.values.toList()
+    }
+
+    val showScrollToBottom by remember {
+        derivedStateOf { listState.firstVisibleItemIndex > 0 }
+    }
+
+    LaunchedEffect(messageList.size) {
+        if (messageList.isNotEmpty()) {
+            listState.animateScrollToItem(0)
+        }
     }
 
     LaunchedEffect(state.isHistoryLoaded, messageList.isEmpty()) {
@@ -80,19 +93,13 @@ fun ChatScreen(
                 onToggleWelcome = onToggleWelcome,
                 onCancelOperator = onCancelOperator
             )
-        }
-    ) { paddingValues ->
+        }) { paddingValues ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.background)
+            modifier = Modifier.fillMaxSize().padding(paddingValues).background(MaterialTheme.colorScheme.background)
         ) {
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 Crossfade(
-                    targetState = state.isShowingWelcome,
-                    animationSpec = tween(500),
-                    label = "Chat Content Crossfade"
+                    targetState = state.isShowingWelcome, animationSpec = tween(500), label = "Chat Content Crossfade"
                 ) { showWelcome ->
                     if (showWelcome) {
                         WelcomeInfo(onSuggestionClick = { text ->
@@ -105,6 +112,28 @@ fun ChatScreen(
                             isTyping = state.isTyping,
                             isOperatorMode = state.isOperatorMode,
                             listState = listState
+                        )
+                    }
+                }
+
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = showScrollToBottom && !state.isShowingWelcome,
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = 16.dp, end = 16.dp),
+                    enter = fadeIn() + scaleIn(),
+                    exit = fadeOut() + scaleOut()
+                ) {
+                    SmallFloatingActionButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                listState.animateScrollToItem(0)
+                            }
+                        },
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        shape = CircleShape
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown, contentDescription = "Прокрутити вниз"
                         )
                     }
                 }
@@ -133,10 +162,7 @@ fun WelcomeInfo(onSuggestionClick: (String) -> Unit) {
     )
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp)
-            .verticalScroll(rememberScrollState()),
+        modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -182,9 +208,7 @@ fun WelcomeInfo(onSuggestionClick: (String) -> Unit) {
         ) {
             suggestions.forEach { suggestion ->
                 SuggestionChip(
-                    text = suggestion,
-                    onClick = { onSuggestionClick(suggestion) }
-                )
+                    text = suggestion, onClick = { onSuggestionClick(suggestion) })
                 Spacer(modifier = Modifier.width(8.dp))
             }
         }
@@ -194,10 +218,8 @@ fun WelcomeInfo(onSuggestionClick: (String) -> Unit) {
 @Composable
 fun SuggestionChip(text: String, onClick: () -> Unit) {
     Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f))
-            .clickable(onClick = onClick)
+        modifier = Modifier.clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)).clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 10.dp)
     ) {
         Text(
@@ -221,76 +243,72 @@ fun ChatTopBar(
 ) {
     TopAppBar(
         title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(
-                            when {
-                                isConnected -> MaterialTheme.colorScheme.primary
-                                isConnecting -> MaterialTheme.colorScheme.tertiary
-                                else -> MaterialTheme.colorScheme.error
-                            }
-                        )
-                )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier.size(10.dp).clip(CircleShape).background(
+                        when {
+                            isConnected -> MaterialTheme.colorScheme.primary
+                            isConnecting -> MaterialTheme.colorScheme.tertiary
+                            else -> MaterialTheme.colorScheme.error
+                        }
+                    )
+            )
 
-                Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(8.dp))
 
-                Text(
-                    text = if (isOperatorMode) "Чат із оператором" else "AIHome",
-                    fontWeight = FontWeight.Bold
-                )
+            Text(
+                text = if (isOperatorMode) "Чат із оператором" else "AIHome", fontWeight = FontWeight.Bold
+            )
 
-                if (isConnected) {
-                    IconButton(onClick = { onToggleWelcome(!isShowingWelcome) }) {
-                        Icon(
-                            imageVector = if (isShowingWelcome) Icons.Outlined.ChatBubbleOutline else Icons.Outlined.Info,
-                            contentDescription = "Показати інформацію",
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
+            if (isConnected) {
+                IconButton(onClick = { onToggleWelcome(!isShowingWelcome) }) {
+                    Icon(
+                        imageVector = if (isShowingWelcome) Icons.Outlined.ChatBubbleOutline else Icons.Outlined.Info,
+                        contentDescription = "Показати інформацію",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
                 }
             }
-        }, actions = {
-            when {
-                isConnecting -> {
+        }
+    }, actions = {
+        when {
+            isConnecting -> {
+                Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            !isConnected -> {
+                IconButton(onClick = onReconnect) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Перепідключитися",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+
+            isOperatorMode -> {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = onCancelOperator) {
+                        Text("Скасувати", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                    }
                     Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-
-                !isConnected -> {
-                    IconButton(onClick = onReconnect) {
-                        Icon(
-                            imageVector = Icons.Default.Warning,
-                            contentDescription = "Перепідключитися",
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
-
-                isOperatorMode -> {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        TextButton(onClick = onCancelOperator) {
-                            Text("Скасувати", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
-                        }
-                        Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-                            Icon(imageVector = Icons.Outlined.Face, contentDescription = "Оператор")
-                        }
+                        Icon(imageVector = Icons.Outlined.Face, contentDescription = "Оператор")
                     }
                 }
             }
-        }, colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = if (isOperatorMode) MaterialTheme.colorScheme.tertiaryContainer
-            else MaterialTheme.colorScheme.primaryContainer,
-            titleContentColor = if (isOperatorMode) MaterialTheme.colorScheme.onTertiaryContainer
-            else MaterialTheme.colorScheme.onPrimaryContainer
-        )
+        }
+    }, colors = TopAppBarDefaults.topAppBarColors(
+        containerColor = if (isOperatorMode) MaterialTheme.colorScheme.tertiaryContainer
+        else MaterialTheme.colorScheme.primaryContainer,
+        titleContentColor = if (isOperatorMode) MaterialTheme.colorScheme.onTertiaryContainer
+        else MaterialTheme.colorScheme.onPrimaryContainer
+    )
     )
 }
 
@@ -303,9 +321,7 @@ fun MessageList(
     listState: LazyListState
 ) {
     LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
+        modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
         state = listState,
         reverseLayout = true,
         contentPadding = PaddingValues(vertical = 16.dp)
@@ -315,12 +331,10 @@ fun MessageList(
                 visible = isTyping,
                 modifier = Modifier.animateItem(),
                 enter = fadeIn() + slideInVertically { it / 2 } + expandVertically(),
-                exit = fadeOut() + slideOutVertically { it / 2 } + shrinkVertically()
-            ) {
+                exit = fadeOut() + slideOutVertically { it / 2 } + shrinkVertically()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(
-                        modifier = Modifier.padding(start = 8.dp).size(12.dp),
-                        strokeWidth = 2.dp
+                        modifier = Modifier.padding(start = 8.dp).size(12.dp), strokeWidth = 2.dp
                     )
                     Text(
                         text = if (isOperatorMode) " Оператор друкує..." else " AI аналізує...",
@@ -338,9 +352,10 @@ fun MessageList(
             AnimatedVisibility(
                 visibleState = visibleState,
                 modifier = Modifier.animateItem(),
-                enter = fadeIn(animationSpec = tween(300)) +
-                        slideInVertically(initialOffsetY = { it / 2 }, animationSpec = tween(300)) +
-                        expandVertically(animationSpec = tween(300))
+                enter = fadeIn(animationSpec = tween(300)) + slideInVertically(
+                    initialOffsetY = { it / 2 },
+                    animationSpec = tween(300)
+                ) + expandVertically(animationSpec = tween(300))
             ) {
                 Column {
                     ChatBubble(msg)
@@ -372,26 +387,18 @@ fun ChatInputBar(
             text = { Text(text = "Функції надсилання медіафайлів та запису голосових повідомлень з’являться в найближчих оновленнях.") },
             confirmButton = {
                 TextButton(onClick = { showDevAlert = false }) { Text("Зрозуміло") }
-            }
-        )
+            })
     }
 
     Surface(
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp,
-        shadowElevation = 8.dp
+        color = MaterialTheme.colorScheme.surface, tonalElevation = 2.dp, shadowElevation = 8.dp
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 12.dp)
-                .navigationBarsPadding(),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 12.dp).navigationBarsPadding(),
             verticalAlignment = Alignment.Bottom
         ) {
             IconButton(
-                onClick = { showDevAlert = true },
-                modifier = Modifier.padding(bottom = 2.dp),
-                enabled = isMediaEnabled
+                onClick = { showDevAlert = true }, modifier = Modifier.padding(bottom = 2.dp), enabled = isMediaEnabled
             ) {
                 Icon(
                     imageVector = Icons.Outlined.AddCircle,
@@ -451,10 +458,7 @@ fun ChatInputBar(
                             onToggleWelcome(false)
                             onSendMessage(inputText)
                             inputText = ""
-                        },
-                        enabled = isSendEnabled,
-                        modifier = Modifier.size(52.dp),
-                        shape = RoundedCornerShape(16.dp)
+                        }, enabled = isSendEnabled, modifier = Modifier.size(52.dp), shape = RoundedCornerShape(16.dp)
                     ) {
                         Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Надіслати")
                     }

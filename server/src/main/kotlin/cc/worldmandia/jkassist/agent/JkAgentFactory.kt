@@ -42,7 +42,7 @@ object JkAgentFactory {
 """.trimIndent()
 
     fun create(crmService: CrmService, infoService: InfoService): AIAgent<String, String> {
-        val model = GoogleModels.Gemini2_5Flash
+        val model = GoogleModels.Gemini2_5FlashLite
         val apiKey = System.getenv("GEMINI_API_KEY") ?: run {
             println("ERROR: missing GEMINI_API_KEY, write it:")
             readln()
