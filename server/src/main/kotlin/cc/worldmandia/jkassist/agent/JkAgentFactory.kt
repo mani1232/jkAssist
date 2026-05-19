@@ -8,6 +8,7 @@ import ai.koog.prompt.executor.clients.google.GoogleModels
 import ai.koog.prompt.executor.llms.all.simpleGoogleAIExecutor
 import cc.worldmandia.jkassist.service.CrmService
 import cc.worldmandia.jkassist.service.InfoService
+import cc.worldmandia.jkassist.service.WebPushService
 
 object JkAgentFactory {
 
@@ -41,8 +42,9 @@ object JkAgentFactory {
     Якщо інструмент повернув рядок, що починається з `[TRANSFER_REQUESTED]` або `[RESET_REQUESTED]`, ти ЗОБОВ'ЯЗАНИЙ повернути ТІЛЬКИ цей рядок у своїй фінальній відповіді. Не додавай жодних інших слів.
 """.trimIndent()
 
-    fun create(crmService: CrmService, infoService: InfoService): AIAgent<String, String> {
+    fun create(crmService: CrmService, infoService: InfoService, webPushService: WebPushService): AIAgent<String, String> {
         val model = GoogleModels.Gemini2_5Flash
+
         val apiKey = System.getenv("GEMINI_API_KEY") ?: run {
             println("ERROR: missing GEMINI_API_KEY, write it:")
             readln()
@@ -52,7 +54,7 @@ object JkAgentFactory {
         val toolRegistry = ToolRegistry {
             tools(
                 JkSupportTools(
-                    crmService, infoService = infoService
+                    crmService, infoService = infoService, webPushService = webPushService
                 )
             )
         }

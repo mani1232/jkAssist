@@ -59,6 +59,12 @@ window.subscribeToPush = async function(publicKeyBase64) {
         const registration = await navigator.serviceWorker.ready;
         let subscription = await registration.pushManager.getSubscription();
 
+        if (subscription && subscription.expirationTime && Date.now() > subscription.expirationTime) {
+            console.log("Push-подписка истекла. Обновляем...");
+            await subscription.unsubscribe();
+            subscription = null;
+        }
+
         if (!subscription) {
             const padding = '='.repeat((4 - publicKeyBase64.length % 4) % 4);
             const base64 = (publicKeyBase64 + padding).replace(/\-/g, '+').replace(/_/g, '/');
@@ -82,3 +88,10 @@ window.subscribeToPush = async function(publicKeyBase64) {
         console.error("Помилка підписки на Push: ", e);
     }
 };
+
+navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'UPDATE_PUSH_SUBSCRIPTION') {
+        console.log("Получен сигнал от SW на обновление Push-токена");
+        window.subscribeToPush("BGPrMtUDx7_ZC7nYCyInlei_0gDhutY3dsjTCbeWs8by9SuDnvgQgk3Ry1PLB-71g_VyRzg-lkuLdtKmiYFg3S0");
+    }
+});

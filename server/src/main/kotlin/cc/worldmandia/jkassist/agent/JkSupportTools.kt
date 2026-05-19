@@ -6,7 +6,7 @@ import ai.koog.agents.core.tools.reflect.ToolSet
 import cc.worldmandia.jkassist.TicketCategory
 import cc.worldmandia.jkassist.service.CrmService
 import cc.worldmandia.jkassist.service.InfoService
-import cc.worldmandia.jkassist.service.JkWebPushService
+import cc.worldmandia.jkassist.service.WebPushService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -25,7 +25,8 @@ import kotlin.time.Duration.Companion.minutes
 @LLMDescription("Інструменти ШІ-диспетчера для допомоги мешканцям ЖК")
 class JkSupportTools(
     private val crmService: CrmService,
-    private val infoService: InfoService
+    private val infoService: InfoService,
+    private val webPushService: WebPushService,
 ) : ToolSet {
 
     @LLMDescription("Показати список усіх поточних заявок користувача.")
@@ -174,7 +175,7 @@ class JkSupportTools(
             try {
                 delay(totalDuration)
 
-                JkWebPushService.sendPushNotification(
+                webPushService.sendPushNotification(
                     userId = userId,
                     title = "🔔 Нагадування від AIHome",
                     body = customMessage

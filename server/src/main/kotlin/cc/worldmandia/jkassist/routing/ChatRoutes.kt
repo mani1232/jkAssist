@@ -8,7 +8,7 @@ import cc.worldmandia.jkassist.agent.JkAgentFactory
 import cc.worldmandia.jkassist.jsonFormat
 import cc.worldmandia.jkassist.service.CrmServiceImpl
 import cc.worldmandia.jkassist.service.InfoService
-import cc.worldmandia.jkassist.service.JkWebPushService
+import cc.worldmandia.jkassist.service.WebPushService
 import cc.worldmandia.jkassist.service.OperatorConsole
 import io.ktor.http.*
 import io.ktor.server.request.receiveText
@@ -32,12 +32,19 @@ private val logger = LoggerFactory.getLogger("ChatRoutes")
 
 @OptIn(ExperimentalUuidApi::class)
 fun Routing.chatRoutes() {
+    val pushPrivateKey = System.getenv("PRIVATE_KEY") ?: run {
+        println("ERROR: missing PRIVATE_KEY, write it:")
+        readln()
+    }
+
+    val webPushService = WebPushService(pushPrivateKey)
+
     val crmService = CrmServiceImpl()
     val infoService = InfoService()
 
     val agent = JkAgentFactory.create(
         crmService,
-        infoService = infoService
+        infoService = infoService, webPushService
     )
 
     OperatorConsole.start()
@@ -105,7 +112,7 @@ fun Routing.chatRoutes() {
                         sendEvent(opMsg)
 
                         launch {
-                            JkWebPushService.sendPushNotification(
+                            webPushService.sendPushNotification(
                                 userId = userId,
                                 title = "Оператор AIHome",
                                 body = operatorText
@@ -222,7 +229,7 @@ fun Routing.chatRoutes() {
                         sendEvent(normalMsg)
 
                         launch {
-                            JkWebPushService.sendPushNotification(
+                            webPushService.sendPushNotification(
                                 userId = userId,
                                 title = "AIHome Асистент",
                                 body = responseText.take(100) + if (responseText.length > 100) "..." else ""

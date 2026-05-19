@@ -20,12 +20,25 @@ self.addEventListener('notificationclick', function(event) {
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
             for (let i = 0; i < clientList.length; i++) {
                 let client = clientList[i];
-                if (client.url.includes('worldmandia.cc') && 'focus' in client) {
+                if (client.url.startsWith(self.location.origin) && 'focus' in client) {
                     return client.focus();
                 }
             }
             if (clients.openWindow) {
                 return clients.openWindow(event.notification.data.url);
+            }
+        })
+    );
+});
+
+self.addEventListener('pushsubscriptionchange', function(event) {
+    console.log('[Service Worker]: Подписка на Push изменена/истекла.');
+
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+            for (let i = 0; i < clientList.length; i++) {
+                let client = clientList[i];
+                client.postMessage({ type: 'UPDATE_PUSH_SUBSCRIPTION' });
             }
         })
     );
