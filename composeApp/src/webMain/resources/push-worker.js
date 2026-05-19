@@ -10,7 +10,23 @@ self.addEventListener('push', function(event) {
         vibrate: [200, 100, 200]
     };
 
-    event.waitUntil(self.registration.showNotification(title, options));
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+            let isAppVisibleAndFocused = false;
+
+            for (let i = 0; i < clientList.length; i++) {
+                let client = clientList[i];
+                if (client.visibilityState === 'visible' && client.focused) {
+                    isAppVisibleAndFocused = true;
+                    break;
+                }
+            }
+
+            if (!isAppVisibleAndFocused) {
+                return self.registration.showNotification(title, options);
+            }
+        })
+    );
 });
 
 self.addEventListener('notificationclick', function(event) {
