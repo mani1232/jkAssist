@@ -9,6 +9,9 @@
     "categories": ["utilities", "productivity"],
     "scope": "./",
     "start_url": "./",
+    "launch_handler": {
+        "client_mode": "navigate-existing"
+    },
     "icons": [
         {
             "src": "icons/icon-72x72.png",
