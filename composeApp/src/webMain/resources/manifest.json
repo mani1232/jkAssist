@@ -1,9 +1,12 @@
 {
     "name": "AIHome - modern ai-based chat for your home",
     "short_name": "AIHome",
+    "description": "Розумний ШІ-асистент для мешканців житлових комплексів.",
     "theme_color": "#4F378B",
     "background_color": "#141218",
     "display": "standalone",
+    "orientation": "portrait",
+    "categories": ["utilities", "productivity"],
     "scope": "./",
     "start_url": "./",
     "icons": [
@@ -54,6 +57,22 @@
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable any"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Повідомити про проблему",
+            "short_name": "Нова заявка",
+            "description": "Швидке створення заявки на ремонт або обслуговування",
+            "url": "./?action=new_ticket",
+            "icons": [{ "src": "icons/icon-96x96.png", "sizes": "96x96", "type": "image/png" }]
+        },
+        {
+            "name": "Перевірити відключення",
+            "short_name": "Відключення",
+            "description": "Дізнатися про планові або аварійні відключення світла/води",
+            "url": "./?action=outages",
+            "icons": [{ "src": "icons/icon-96x96.png", "sizes": "96x96", "type": "image/png" }]
         }
     ]
 }

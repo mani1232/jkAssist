@@ -53,7 +53,9 @@ fun ChatScreen(
     onSendMessage: (String) -> Unit,
     onReconnect: () -> Unit,
     onToggleWelcome: (Boolean) -> Unit,
-    onCancelOperator: () -> Unit
+    onCancelOperator: () -> Unit,
+    showInstallButton: Boolean = false,
+    onInstallClick: () -> Unit = {}
 ) {
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
@@ -91,7 +93,9 @@ fun ChatScreen(
                 isShowingWelcome = state.isShowingWelcome,
                 onReconnect = onReconnect,
                 onToggleWelcome = onToggleWelcome,
-                onCancelOperator = onCancelOperator
+                onCancelOperator = onCancelOperator,
+                showInstallButton = showInstallButton,
+                onInstallClick = onInstallClick
             )
         }) { paddingValues ->
         Column(
@@ -239,76 +243,89 @@ fun ChatTopBar(
     isShowingWelcome: Boolean,
     onReconnect: () -> Unit,
     onToggleWelcome: (Boolean) -> Unit,
-    onCancelOperator: () -> Unit
+    onCancelOperator: () -> Unit,
+    showInstallButton: Boolean = false,
+    onInstallClick: () -> Unit = {}
 ) {
     TopAppBar(
         title = {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier.size(10.dp).clip(CircleShape).background(
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier.size(10.dp).clip(CircleShape).background(
                         when {
                             isConnected -> MaterialTheme.colorScheme.primary
                             isConnecting -> MaterialTheme.colorScheme.tertiary
                             else -> MaterialTheme.colorScheme.error
                         }
                     )
-            )
+                )
 
-            Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(8.dp))
 
-            Text(
-                text = if (isOperatorMode) "Чат із оператором" else "AIHome", fontWeight = FontWeight.Bold
-            )
+                Text(
+                    text = if (isOperatorMode) "Чат із оператором" else "AIHome", fontWeight = FontWeight.Bold
+                )
 
-            if (isConnected) {
-                IconButton(onClick = { onToggleWelcome(!isShowingWelcome) }) {
-                    Icon(
-                        imageVector = if (isShowingWelcome) Icons.Outlined.ChatBubbleOutline else Icons.Outlined.Info,
-                        contentDescription = "Показати інформацію",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
-        }
-    }, actions = {
-        when {
-            isConnecting -> {
-                Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
-            !isConnected -> {
-                IconButton(onClick = onReconnect) {
-                    Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = "Перепідключитися",
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-
-            isOperatorMode -> {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = onCancelOperator) {
-                        Text("Скасувати", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                if (isConnected) {
+                    IconButton(onClick = { onToggleWelcome(!isShowingWelcome) }) {
+                        Icon(
+                            imageVector = if (isShowingWelcome) Icons.Outlined.ChatBubbleOutline else Icons.Outlined.Info,
+                            contentDescription = "Показати інформацію",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     }
+                }
+            }
+        }, actions = {
+
+            if (showInstallButton) {
+                IconButton(onClick = onInstallClick) {
+                    Icon(
+                        imageVector = Icons.Outlined.Download,
+                        contentDescription = "Встановити додаток",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            when {
+                isConnecting -> {
                     Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-                        Icon(imageVector = Icons.Outlined.Face, contentDescription = "Оператор")
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                !isConnected -> {
+                    IconButton(onClick = onReconnect) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = "Перепідключитися",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+
+                isOperatorMode -> {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = onCancelOperator) {
+                            Text("Скасувати", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                        }
+                        Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                            Icon(imageVector = Icons.Outlined.Face, contentDescription = "Оператор")
+                        }
                     }
                 }
             }
-        }
-    }, colors = TopAppBarDefaults.topAppBarColors(
-        containerColor = if (isOperatorMode) MaterialTheme.colorScheme.tertiaryContainer
-        else MaterialTheme.colorScheme.primaryContainer,
-        titleContentColor = if (isOperatorMode) MaterialTheme.colorScheme.onTertiaryContainer
-        else MaterialTheme.colorScheme.onPrimaryContainer
-    )
+        }, colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = if (isOperatorMode) MaterialTheme.colorScheme.tertiaryContainer
+            else MaterialTheme.colorScheme.primaryContainer,
+            titleContentColor = if (isOperatorMode) MaterialTheme.colorScheme.onTertiaryContainer
+            else MaterialTheme.colorScheme.onPrimaryContainer
+        )
     )
 }
 
