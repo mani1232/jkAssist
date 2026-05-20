@@ -1,17 +1,15 @@
 package cc.worldmandia.jkassist.routing
 
-import cc.worldmandia.jkassist.MockDatabase
-import cc.worldmandia.jkassist.Role
-import cc.worldmandia.jkassist.WsEvent
+import ai.koog.prompt.message.*
+import cc.worldmandia.jkassist.*
 import cc.worldmandia.jkassist.agent.ChatStateManager
 import cc.worldmandia.jkassist.agent.JkAgentFactory
-import cc.worldmandia.jkassist.jsonFormat
 import cc.worldmandia.jkassist.service.CrmServiceImpl
 import cc.worldmandia.jkassist.service.InfoService
-import cc.worldmandia.jkassist.service.WebPushService
 import cc.worldmandia.jkassist.service.OperatorConsole
+import cc.worldmandia.jkassist.service.WebPushService
 import io.ktor.http.*
-import io.ktor.server.request.receiveText
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
@@ -24,6 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.slf4j.LoggerFactory
+import kotlin.io.encoding.Base64
 import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -94,7 +93,7 @@ fun Routing.chatRoutes() {
                         val endMsg = WsEvent.Message(
                             id = "sys-${Uuid.generateV7().toHexDashString()}",
                             role = Role.SYSTEM,
-                            text = "*(Системне повідомлення)* Оператор завершив діалог. Бот знову з вами.",
+                            text = "*(Системне повідомлення)* Оператор завершив діалог. Дякуємо за очікування, бот знову на зв'язку.",
                             timestampMs = Clock.System.now()
                         )
                         sendEvent(endMsg)
@@ -133,8 +132,22 @@ fun Routing.chatRoutes() {
         try {
             for (frame in incoming) {
                 if (frame !is Frame.Text) continue
-                val userText = frame.readText().trim()
-                if (userText.isBlank()) continue
+                val rawText = frame.readText().trim()
+                if (rawText.isBlank()) continue
+
+                val incomingMsg = try {
+                    jsonFormat.decodeFromString<WsEvent.Message>(rawText)
+                } catch (_: Exception) {
+                    WsEvent.Message(
+                        id = Uuid.generateV7().toHexDashString(),
+                        role = Role.USER,
+                        text = rawText,
+                        timestampMs = Clock.System.now()
+                    )
+                }
+
+                val userText = incomingMsg.text
+                val data = incomingMsg.data
 
                 if (userText == "/cancel_operator" && ChatStateManager.isWaitingForOperator(sessionUuid)) {
                     ChatStateManager.removeWaitingStatus(sessionUuid)
@@ -142,7 +155,7 @@ fun Routing.chatRoutes() {
                     val cancelMsg = WsEvent.Message(
                         id = "sys-${Uuid.generateV7().toHexDashString()}",
                         role = Role.SYSTEM,
-                        text = "*(Системне повідомлення)* Оператор завершив діалог (виклик скасовано). Бот знову з вами.",
+                        text = "*(Системне повідомлення)* Ви скасували виклик оператора. Бот знову з вами.",
                         timestampMs = Clock.System.now()
                     )
                     ChatStateManager.saveUiMessage(sessionUuid, cancelMsg)
@@ -156,13 +169,14 @@ fun Routing.chatRoutes() {
                     id = Uuid.generateV7().toHexDashString(),
                     role = Role.USER,
                     text = userText,
-                    timestampMs = Clock.System.now()
+                    timestampMs = Clock.System.now(),
+                    data = data
                 )
                 ChatStateManager.saveUiMessage(sessionUuid, userMsg)
                 sendEvent(userMsg)
 
                 if (ChatStateManager.isWaitingForOperator(sessionUuid)) {
-                    println("\n💬 [КОРИСТУВАЧ $sessionUuid]: $userText")
+                    println("\n💬 [КОРИСТУВАЧ $sessionUuid]: $userText ${if(data != null) "[Data]" else ""}")
                     continue
                 }
 
@@ -171,7 +185,40 @@ fun Routing.chatRoutes() {
                 val currentTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
                 val enrichedText = "[SYSTEM context: поточний userId = $userId, поточний час = $currentTime]\n$userText"
                 val botResponse = try {
-                    session.run(enrichedText)
+                    if (data != null) {
+                        when (data.first) {
+                            DataType.AUDIO -> {
+                                logger.info("🎙️ Отримано аудіо від $userId, розмір Base64: ${data.second.length} символів")
+
+                                val base64Str = data.second.substringAfter("base64,")
+                                val audioBytes = Base64.decode(base64Str)
+
+                                val userMessage = Message.User(
+                                    parts = listOf(
+                                        MessagePart.Text(enrichedText),
+                                        MessagePart.Attachment(
+                                            AttachmentSource.Audio(
+                                                content = AttachmentContent.Binary.Bytes(audioBytes),
+                                                format = "webm",
+                                                fileName = "voice_message.webm"
+                                            )
+                                        )
+                                    ),
+                                    metaInfo = RequestMetaInfo(timestamp = Clock.System.now())
+                                )
+
+                                val currentHistory = ChatStateManager.sessionMemoryHistory.load(sessionUuid)
+                                val updatedHistory = currentHistory + userMessage
+                                ChatStateManager.sessionMemoryHistory.store(sessionUuid, updatedHistory)
+
+                                session.run(" ")
+                            }
+                            DataType.IMAGE -> TODO()
+                        }
+
+                    } else {
+                        session.run(enrichedText)
+                    }
                 } catch (e: Exception) {
                     logger.error("Помилка AI: ${e.message}")
                     "Вибачте, сталася технічна помилка при зверненні до ШІ. Спробуйте ще раз."

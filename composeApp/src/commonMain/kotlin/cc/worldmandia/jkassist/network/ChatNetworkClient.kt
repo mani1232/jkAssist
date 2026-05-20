@@ -1,7 +1,8 @@
 package cc.worldmandia.jkassist.network
 
-import cc.worldmandia.jkassist.SessionStorage
+import cc.worldmandia.jkassist.DataType
 import cc.worldmandia.jkassist.WsEvent
+import cc.worldmandia.jkassist.storage.SessionStorage
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.*
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.serialization.json.Json
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 
 class ChatNetworkClient(
@@ -81,12 +83,21 @@ class ChatNetworkClient(
         }
     }
 
-    suspend fun sendMessage(text: String) {
+    suspend fun sendMessage(text: String, audioData: Pair<DataType, String>? = null) {
         val session = webSocketSession
         if (session == null || !session.isActive) {
             throw IllegalStateException("Немає активного з'єднання через вебсокет")
         }
-        session.send(Frame.Text(text))
+
+        val message = WsEvent.Message(
+            id = "",
+            role = cc.worldmandia.jkassist.Role.USER,
+            text = text,
+            timestampMs = Clock.System.now(),
+            data = audioData
+        )
+
+        session.send(Frame.Text(jsonFormat.encodeToString(message)))
     }
 
     fun disconnect() {

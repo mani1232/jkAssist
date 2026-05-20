@@ -34,8 +34,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cc.worldmandia.jkassist.DataType
 import cc.worldmandia.jkassist.Role
 import cc.worldmandia.jkassist.WsEvent
+import cc.worldmandia.jkassist.audio.playAudio
+import cc.worldmandia.jkassist.audio.startAudioRecording
+import cc.worldmandia.jkassist.audio.stopAudio
+import cc.worldmandia.jkassist.audio.stopAudioRecording
 import cc.worldmandia.jkassist.viewmodels.ChatState
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownColor
@@ -47,10 +52,16 @@ import kotlinx.datetime.format.FormatStringsInDatetimeFormats
 import kotlinx.datetime.format.byUnicodePattern
 import kotlinx.datetime.toLocalDateTime
 
+enum class InputAction {
+    MIC,
+    SEND_TEXT,
+    STOP_RECORDING
+}
+
 @Composable
 fun ChatScreen(
     state: ChatState,
-    onSendMessage: (String) -> Unit,
+    onSendMessage: (String, String?) -> Unit,
     onReconnect: () -> Unit,
     onToggleWelcome: (Boolean) -> Unit,
     onCancelOperator: () -> Unit,
@@ -108,7 +119,7 @@ fun ChatScreen(
                     if (showWelcome) {
                         WelcomeInfo(onSuggestionClick = { text ->
                             onToggleWelcome(false)
-                            onSendMessage(text)
+                            onSendMessage(text, null)
                         })
                     } else {
                         MessageList(
@@ -388,14 +399,23 @@ fun ChatInputBar(
     isConnected: Boolean,
     isHistoryLoaded: Boolean,
     isTyping: Boolean,
-    onSendMessage: (String) -> Unit,
+    onSendMessage: (String, String?) -> Unit,
     onToggleWelcome: (Boolean) -> Unit
 ) {
+    var isRecording by remember { mutableStateOf(false) }
+    var recordError by remember { mutableStateOf<String?>(null) }
+
     var inputText by remember { mutableStateOf("") }
     var showDevAlert by remember { mutableStateOf(false) }
 
     val isSendEnabled = isConnected && isHistoryLoaded && !isTyping && inputText.isNotBlank()
     val isMediaEnabled = isConnected && isHistoryLoaded
+
+    val currentAction = when {
+        isRecording -> InputAction.STOP_RECORDING
+        inputText.isNotBlank() -> InputAction.SEND_TEXT
+        else -> InputAction.MIC
+    }
 
     if (showDevAlert) {
         AlertDialog(
@@ -432,7 +452,7 @@ fun ChatInputBar(
                     if (event.key == Key.Enter && !event.isShiftPressed && event.type == KeyEventType.KeyDown) {
                         if (isSendEnabled) {
                             onToggleWelcome(false)
-                            onSendMessage(inputText.trim())
+                            onSendMessage(inputText.trim(), null)
                             inputText = ""
                         }
                         return@onPreviewKeyEvent true
@@ -443,7 +463,7 @@ fun ChatInputBar(
                 keyboardActions = KeyboardActions(onSend = {
                     if (isSendEnabled) {
                         onToggleWelcome(false)
-                        onSendMessage(inputText.trim())
+                        onSendMessage(inputText.trim(), null)
                         inputText = ""
                     }
                 }),
@@ -465,32 +485,71 @@ fun ChatInputBar(
             Spacer(Modifier.width(8.dp))
 
             Crossfade(
-                targetState = inputText.isNotBlank(),
+                targetState = currentAction,
                 label = "Input Action Crossfade",
                 modifier = Modifier.padding(bottom = 2.dp)
-            ) { hasText ->
-                if (hasText) {
-                    FilledIconButton(
-                        onClick = {
-                            onToggleWelcome(false)
-                            onSendMessage(inputText)
-                            inputText = ""
-                        }, enabled = isSendEnabled, modifier = Modifier.size(52.dp), shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Надіслати")
+            ) { action ->
+                when (action) {
+                    InputAction.STOP_RECORDING -> {
+                        FilledIconButton(
+                            onClick = {
+                                stopAudioRecording()
+                                isRecording = false
+                            },
+                            modifier = Modifier.size(52.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = IconButtonDefaults.filledIconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = MaterialTheme.colorScheme.onError
+                            )
+                        ) {
+                            Icon(Icons.Outlined.Stop, contentDescription = "Зупинити запис")
+                        }
                     }
-                } else {
-                    FilledIconButton(
-                        onClick = { showDevAlert = true },
-                        enabled = isMediaEnabled,
-                        modifier = Modifier.size(52.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    ) {
-                        Icon(Icons.Outlined.Mic, contentDescription = "Записати аудіо")
+
+                    InputAction.SEND_TEXT -> {
+                        FilledIconButton(
+                            onClick = {
+                                onToggleWelcome(false)
+                                onSendMessage(inputText.trim(), null)
+                                inputText = ""
+                            },
+                            enabled = isSendEnabled,
+                            modifier = Modifier.size(52.dp),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Надіслати")
+                        }
+                    }
+
+                    InputAction.MIC -> {
+                        FilledIconButton(
+                            onClick = {
+                                isRecording = true
+                                recordError = null
+                                startAudioRecording(
+                                    onSuccess = { base64 ->
+                                        isRecording = false
+                                        onToggleWelcome(false)
+                                        onSendMessage("[Голосове повідомлення]", base64)
+                                    },
+                                    onError = { err ->
+                                        isRecording = false
+                                        recordError = err
+                                        println("Audio error: $err")
+                                    }
+                                )
+                            },
+                            enabled = isMediaEnabled,
+                            modifier = Modifier.size(52.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = IconButtonDefaults.filledIconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        ) {
+                            Icon(Icons.Outlined.Mic, contentDescription = "Записати аудіо")
+                        }
                     }
                 }
             }
@@ -502,9 +561,10 @@ fun ChatInputBar(
 @Composable
 fun ChatBubble(msg: WsEvent.Message) {
     val isUser = msg.role == Role.USER
-
     val isSysNotice = msg.role == Role.SYSTEM && msg.text.startsWith("*")
     val isOperator = msg.role == Role.SYSTEM && !msg.text.startsWith("*")
+
+    var isPlaying by remember { mutableStateOf(false) }
 
     val senderName = when {
         isUser -> "Ви"
@@ -568,18 +628,57 @@ fun ChatBubble(msg: WsEvent.Message) {
                     bottomStart = CornerSize(if (!isUser && !isSysNotice) 4.dp else 16.dp)
                 ), tonalElevation = if (isSysNotice) 0.dp else 1.dp
             ) {
-                Markdown(
-                    content = msg.text,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                    colors = markdownColor(
-                        text = when {
-                            isSysNotice -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                            isUser -> MaterialTheme.colorScheme.onPrimaryContainer
-                            isOperator -> MaterialTheme.colorScheme.onTertiaryContainer
-                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                val contentColor = when {
+                    isSysNotice -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                    isUser -> MaterialTheme.colorScheme.onPrimaryContainer
+                    isOperator -> MaterialTheme.colorScheme.onTertiaryContainer
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                }
+
+                if (msg.data != null) {
+                    when (msg.data!!.first) {
+                        DataType.AUDIO -> {
+                            Row(
+                                modifier = Modifier
+                                    .clickable {
+                                        if (isPlaying) {
+                                            stopAudio()
+                                            isPlaying = false
+                                        } else {
+                                            isPlaying = true
+                                            playAudio(
+                                                base64Audio = msg.data!!.second,
+                                                onEnded = { isPlaying = false }
+                                            )
+                                        }
+                                    }
+                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = if (isPlaying) Icons.Outlined.Stop else Icons.Outlined.PlayArrow,
+                                    contentDescription = if (isPlaying) "Зупинити" else "Відтворити",
+                                    tint = contentColor,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = if (isPlaying) "Відтворення..." else "Голосове повідомлення",
+                                    color = contentColor,
+                                    fontWeight = FontWeight.Medium,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
                         }
+                        DataType.IMAGE -> TODO()
+                    }
+                } else {
+                    Markdown(
+                        content = msg.text,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        colors = markdownColor(text = contentColor)
                     )
-                )
+                }
             }
         }
     }

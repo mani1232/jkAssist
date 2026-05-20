@@ -6,6 +6,8 @@ import kotlin.time.Instant
 
 @Serializable
 enum class Role { USER, BOT, SYSTEM }
+@Serializable
+enum class DataType { AUDIO, IMAGE }
 
 @Serializable
 enum class TicketCategory { PLUMBING, ELECTRICAL, GAS, CARPENTRY, CLEANING, OTHER }
@@ -17,7 +19,8 @@ sealed interface WsEvent {
         val id: String,
         val role: Role,
         val text: String,
-        val timestampMs: Instant
+        val timestampMs: Instant,
+        val data: Pair<DataType, String>? = null
     ) : WsEvent
 
     @Serializable

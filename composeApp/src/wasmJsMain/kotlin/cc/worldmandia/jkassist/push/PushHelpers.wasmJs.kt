@@ -1,4 +1,8 @@
-package cc.worldmandia.jkassist
+package cc.worldmandia.jkassist.push
+
+actual fun subscribeToPush(publicKey: String) {
+    subscribeToPushJS(publicKey)
+}
 
 @OptIn(ExperimentalWasmJsInterop::class)
 @JsFun("function(publicKey) { window.subscribeToPush(publicKey); }")

@@ -4,17 +4,17 @@ kotlin = "2.4.0-RC"
 ktor = "3.5.0"
 logback = "1.5.32"
 
-compose-multiplatform = "1.12.0-alpha01"
+compose-multiplatform = "1.12.0-alpha02+dev4161"
 compose-hot-reload = "1.1.1"
 icons = "1.7.3"
 
-compose-material3 = "1.12.0-alpha01"
+compose-material3 = "1.12.0-alpha02+dev4161"
 
-compose-adaptive = "1.3.0-beta01"
+compose-adaptive = "1.3.0-beta02+dev4161"
 
-androidx-lifecycle = "2.11.0-beta01"
-androidx-navigation = "2.10.0-alpha01"
-androidx-navigation3 = "1.1.1"
+androidx-lifecycle = "2.11.0-beta02+dev4115"
+androidx-navigation = "2.10.0-alpha02+dev4161"
+androidx-navigation3 = "1.1.2+dev4115"
 androidx-navigationevent = "1.1.0"
 androidx-savedstate = "1.4.0"
 androidx-window = "1.5.1"

@@ -15,10 +15,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cc.worldmandia.jkassist.DataType
 import cc.worldmandia.jkassist.Role
-import cc.worldmandia.jkassist.WebSessionStorage
 import cc.worldmandia.jkassist.network.ChatNetworkClient
-import cc.worldmandia.jkassist.subscribeToPushJS
+import cc.worldmandia.jkassist.push.subscribeToPush
+import cc.worldmandia.jkassist.storage.SessionStorage
 import cc.worldmandia.jkassist.ui.components.ChatScreen
 import cc.worldmandia.jkassist.viewmodels.ChatViewModel
 import kotlinx.browser.document
@@ -45,7 +46,7 @@ import kotlin.js.unsafeCast
 fun App() = MaterialExpressiveTheme(if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()) {
 
     val scope = rememberCoroutineScope()
-    val viewModel = remember { ChatViewModel(scope, ChatNetworkClient(WebSessionStorage())) }
+    val viewModel = remember { ChatViewModel(scope, ChatNetworkClient(SessionStorage())) }
     val state by viewModel.state.collectAsState()
 
     var showUpdateDialog by remember { mutableStateOf(false) }
@@ -136,10 +137,10 @@ fun App() = MaterialExpressiveTheme(if (isSystemInDarkTheme()) darkColorScheme()
                     if (Notification.permission == NotificationPermission.default) {
                         val permission = Notification.requestPermission()
                         if (permission == NotificationPermission.granted) {
-                            subscribeToPushJS("BGPrMtUDx7_ZC7nYCyInlei_0gDhutY3dsjTCbeWs8by9SuDnvgQgk3Ry1PLB-71g_VyRzg-lkuLdtKmiYFg3S0")
+                            subscribeToPush("BGPrMtUDx7_ZC7nYCyInlei_0gDhutY3dsjTCbeWs8by9SuDnvgQgk3Ry1PLB-71g_VyRzg-lkuLdtKmiYFg3S0")
                         }
                     } else if (Notification.permission == NotificationPermission.granted) {
-                        subscribeToPushJS("BGPrMtUDx7_ZC7nYCyInlei_0gDhutY3dsjTCbeWs8by9SuDnvgQgk3Ry1PLB-71g_VyRzg-lkuLdtKmiYFg3S0")
+                        subscribeToPush("BGPrMtUDx7_ZC7nYCyInlei_0gDhutY3dsjTCbeWs8by9SuDnvgQgk3Ry1PLB-71g_VyRzg-lkuLdtKmiYFg3S0")
                     }
                 } catch (e: Exception) {
                     println("Push error: ${e.message}")
@@ -180,7 +181,7 @@ fun App() = MaterialExpressiveTheme(if (isSystemInDarkTheme()) darkColorScheme()
 
         ChatScreen(
             state = state,
-            onSendMessage = viewModel::sendMessage,
+            onSendMessage = { text, audio -> viewModel.sendMessage(text, audio?.let { DataType.AUDIO to audio }) },
             onReconnect = viewModel::connect,
             onToggleWelcome = viewModel::setShowWelcome,
             onCancelOperator = { viewModel.sendMessage("/cancel_operator") },

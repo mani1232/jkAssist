@@ -2,9 +2,8 @@ package cc.worldmandia.jkassist.agent
 
 import ai.koog.agents.chatMemory.feature.InMemoryChatHistoryProvider
 import ai.koog.agents.snapshot.providers.file.JVMFilePersistenceStorageProvider
-import ai.koog.prompt.message.Message
-import ai.koog.prompt.message.RequestMetaInfo
-import ai.koog.prompt.message.ResponseMetaInfo
+import ai.koog.prompt.message.*
+import cc.worldmandia.jkassist.DataType
 import cc.worldmandia.jkassist.Role
 import cc.worldmandia.jkassist.WsEvent
 import cc.worldmandia.jkassist.jsonFormat
@@ -16,6 +15,7 @@ import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.io.encoding.Base64
 import kotlin.io.path.Path
 import kotlin.time.Instant
 
@@ -54,10 +54,36 @@ object ChatStateManager {
 
                         val agentMessages = messages.map { msg ->
                             when (msg.role) {
-                                Role.USER -> Message.User(
-                                    content = msg.text,
-                                    metaInfo = RequestMetaInfo(timestamp = msg.timestampMs)
-                                )
+                                Role.USER -> {
+                                    if (msg.data != null) {
+                                        when (msg.data!!.first) {
+                                            DataType.AUDIO -> {
+                                                val base64Str = msg.data!!.second.substringAfter("base64,")
+                                                val audioBytes = Base64.decode(base64Str)
+
+                                                Message.User(
+                                                    parts = listOf(
+                                                        MessagePart.Text(msg.text),
+                                                        MessagePart.Attachment(
+                                                            AttachmentSource.Audio(
+                                                                content = AttachmentContent.Binary.Bytes(audioBytes),
+                                                                format = "webm",
+                                                                fileName = "voice_message.webm"
+                                                            )
+                                                        )
+                                                    ),
+                                                    metaInfo = RequestMetaInfo(timestamp = msg.timestampMs)
+                                                )
+                                            }
+                                            DataType.IMAGE -> TODO()
+                                        }
+                                    } else {
+                                        Message.User(
+                                            content = msg.text,
+                                            metaInfo = RequestMetaInfo(timestamp = msg.timestampMs)
+                                        )
+                                    }
+                                }
 
                                 Role.BOT -> Message.Assistant(
                                     content = msg.text,

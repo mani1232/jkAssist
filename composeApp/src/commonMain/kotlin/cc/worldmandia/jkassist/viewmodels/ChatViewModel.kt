@@ -1,5 +1,6 @@
 package cc.worldmandia.jkassist.viewmodels
 
+import cc.worldmandia.jkassist.DataType
 import cc.worldmandia.jkassist.Role
 import cc.worldmandia.jkassist.WsEvent
 import cc.worldmandia.jkassist.network.ChatNetworkClient
@@ -126,13 +127,14 @@ class ChatViewModel(
         }
     }
 
-    fun sendMessage(text: String) {
+    fun sendMessage(text: String, data: Pair<DataType, String>? = null) {
         val currentState = _state.value
-        if (text.isBlank() || !currentState.isConnected) return
+        if (!currentState.isConnected) return
+        if (text.isBlank() && data == null) return
 
         scope.launch {
             try {
-                networkClient.sendMessage(text)
+                networkClient.sendMessage(text, data)
             } catch (_: Exception) {
                 _state.update { it.copy(error = "Помилка під час надсилання: перевірте з'єднання") }
             }
