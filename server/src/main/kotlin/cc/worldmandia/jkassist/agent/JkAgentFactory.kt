@@ -62,7 +62,7 @@ object JkAgentFactory {
         return AIAgent(executor, model, toolRegistry = toolRegistry, systemPrompt = SYSTEM_PROMPT) {
             install(ChatMemory) {
                 chatHistoryProvider = ChatStateManager.sessionMemoryHistory
-                windowSize(50)
+                windowSize(20)
             }
             install(Persistence) {
                 storage = ChatStateManager.sessionHistory
