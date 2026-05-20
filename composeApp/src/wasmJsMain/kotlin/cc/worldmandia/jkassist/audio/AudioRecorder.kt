@@ -17,7 +17,9 @@ function(onSuccess, onError) {
             };
             
             mediaRecorder.onstop = () => {
-                const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                const mimeType = mediaRecorder.mimeType || 'audio/webm';
+                const blob = new Blob(audioChunks, { type: mimeType });
+                
                 const reader = new FileReader();
                 reader.onloadend = () => {
                     onSuccess(reader.result);
@@ -58,20 +60,30 @@ function(base64Audio, onEnded) {
         }
     }
     
-    var audio = new Audio(base64Audio);
-    window.currentAudio = audio;
-    window.currentAudioOnEnded = onEnded;
-    
-    // Коли аудіо дограло до кінця
-    audio.onended = function() {
-        if (window.currentAudioOnEnded) {
-            window.currentAudioOnEnded();
+    try {
+        var audio = new Audio(base64Audio);
+        window.currentAudio = audio;
+        window.currentAudioOnEnded = onEnded;
+        
+        audio.onended = function() {
+            if (window.currentAudioOnEnded) window.currentAudioOnEnded();
+            window.currentAudio = null;
+            window.currentAudioOnEnded = null;
+        };
+        
+        var playPromise = audio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(e => {
+                console.error("Помилка відтворення аудіо:", e);
+                if (window.currentAudioOnEnded) window.currentAudioOnEnded();
+                window.currentAudio = null;
+                window.currentAudioOnEnded = null;
+            });
         }
-        window.currentAudio = null;
-        window.currentAudioOnEnded = null;
-    };
-    
-    audio.play().catch(e => console.error("Audio play error:", e));
+    } catch (e) {
+        console.error("Помилка ініціалізації аудіо:", e);
+        onEnded();
+    }
 }
 """)
 external fun playAudioJS(base64Audio: String, onEnded: () -> Unit)

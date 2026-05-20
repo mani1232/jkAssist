@@ -58,7 +58,11 @@ object ChatStateManager {
                                     if (msg.data != null) {
                                         when (msg.data!!.first) {
                                             DataType.AUDIO -> {
-                                                val base64Str = msg.data!!.second.substringAfter("base64,")
+                                                val dataString = msg.data!!.second
+                                                val mimeType = dataString.substringAfter("data:audio/").substringBefore(";")
+                                                val format = mimeType.ifBlank { "webm" }
+
+                                                val base64Str = dataString.substringAfter("base64,")
                                                 val audioBytes = Base64.decode(base64Str)
 
                                                 Message.User(
@@ -67,8 +71,8 @@ object ChatStateManager {
                                                         MessagePart.Attachment(
                                                             AttachmentSource.Audio(
                                                                 content = AttachmentContent.Binary.Bytes(audioBytes),
-                                                                format = "webm",
-                                                                fileName = "voice_message.webm"
+                                                                format = format,
+                                                                fileName = "voice_message.$format"
                                                             )
                                                         )
                                                     ),

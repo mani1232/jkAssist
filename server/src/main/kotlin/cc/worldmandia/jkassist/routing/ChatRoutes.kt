@@ -190,7 +190,11 @@ fun Routing.chatRoutes() {
                             DataType.AUDIO -> {
                                 logger.info("🎙️ Отримано аудіо від $userId, розмір Base64: ${data.second.length} символів")
 
-                                val base64Str = data.second.substringAfter("base64,")
+                                val dataString = data.second
+                                val mimeType = dataString.substringAfter("data:audio/").substringBefore(";")
+                                val format = mimeType.ifBlank { "webm" }
+
+                                val base64Str = dataString.substringAfter("base64,")
                                 val audioBytes = Base64.decode(base64Str)
 
                                 val userMessage = Message.User(
@@ -199,8 +203,8 @@ fun Routing.chatRoutes() {
                                         MessagePart.Attachment(
                                             AttachmentSource.Audio(
                                                 content = AttachmentContent.Binary.Bytes(audioBytes),
-                                                format = "webm",
-                                                fileName = "voice_message.webm"
+                                                format = format,
+                                                fileName = "voice_message.$format"
                                             )
                                         )
                                     ),
