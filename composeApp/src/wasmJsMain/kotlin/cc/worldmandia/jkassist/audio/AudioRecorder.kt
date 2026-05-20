@@ -7,7 +7,14 @@ function(onSuccess, onError) {
         onError("Ваш браузер не підтримує запис аудіо");
         return;
     }
-    navigator.mediaDevices.getUserMedia({ audio: true })
+    
+    const audioConstraints = {
+        noiseSuppression: true,
+        echoCancellation: true,
+        autoGainControl: true
+    };
+
+    navigator.mediaDevices.getUserMedia({ audio: audioConstraints })
         .then(stream => {
             const mediaRecorder = new MediaRecorder(stream);
             const audioChunks = [];
